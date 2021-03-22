@@ -1,1 +1,1 @@
-# PictureManager-Mac-Swift
+# PictureManager for Mac
