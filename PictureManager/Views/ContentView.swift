@@ -17,19 +17,9 @@ struct ContentView: View {
         FileInfo(name: "c"),
     ]
     
-    let tree = DirectoryInfo(content: "Root",
-                        children: [.init(content: "Level1",
-                                         children: [.init(content: "Level2")])])
-    
     var body: some View {
         NavigationView {
-            VStack{
-                List {
-                    OutlineGroup(tree, id: \.id, children: \.children) { node in
-                        Text(node.content)
-                    }
-                }.navigationTitle("Folders")
-            }
+            DirectoryView()
             List(files, id: \.id) { file in
                 Text(file.name)
             }

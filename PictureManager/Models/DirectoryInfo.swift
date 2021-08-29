@@ -2,17 +2,31 @@
 //  DirectoryInfo.swift
 //  PictureManager
 //
-//  Created by Leonardo on 2021/4/11.
+//  Created on 2021/4/11.
 //
 
 import Foundation
 
-class DirectoryInfo: Identifiable {
+class DirectoryInfo: Identifiable, Hashable, Equatable, ObservableObject {
+    static func == (lhs: DirectoryInfo, rhs: DirectoryInfo) -> Bool {
+        lhs.url == rhs.url
+    }
+    
     let id = UUID()
-    let content: String
-    let children: [DirectoryInfo]?
-    init(content: String, children: [DirectoryInfo]? = nil) {
-        self.content = content
+    
+    var children: [DirectoryInfo]?
+    
+    init(url: URL, children: [DirectoryInfo]? = nil) {
+        self.url = url
         self.children = children
+    }
+    
+    let url: URL
+    var name: String {
+        url.lastPathComponent
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(url)
     }
 }
