@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A7888F6926EFABC4005B73C0 /* DirectoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7888F6826EFABC4005B73C0 /* DirectoryView.swift */; };
+		A7888F6926EFABC4005B73C0 /* DirectoryTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7888F6826EFABC4005B73C0 /* DirectoryTreeView.swift */; };
 		A7888F6B26EFABE5005B73C0 /* FileSystemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7888F6A26EFABE5005B73C0 /* FileSystemManager.swift */; };
 		A78E39492610C42D00479D78 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78E39482610C42D00479D78 /* MainView.swift */; };
 		A7B30F762622F536002907CD /* FileInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B30F752622F536002907CD /* FileInfo.swift */; };
@@ -40,7 +40,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		A7888F6826EFABC4005B73C0 /* DirectoryView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DirectoryView.swift; sourceTree = "<group>"; };
+		A7888F6826EFABC4005B73C0 /* DirectoryTreeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DirectoryTreeView.swift; sourceTree = "<group>"; };
 		A7888F6A26EFABE5005B73C0 /* FileSystemManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileSystemManager.swift; sourceTree = "<group>"; };
 		A78E39482610C42D00479D78 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		A7B30F752622F536002907CD /* FileInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileInfo.swift; sourceTree = "<group>"; };
@@ -100,7 +100,7 @@
 			children = (
 				A7C7AE5626075F1F0043457F /* ContentView.swift */,
 				A78E39482610C42D00479D78 /* MainView.swift */,
-				A7888F6826EFABC4005B73C0 /* DirectoryView.swift */,
+				A7888F6826EFABC4005B73C0 /* DirectoryTreeView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -307,7 +307,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A7888F6926EFABC4005B73C0 /* DirectoryView.swift in Sources */,
+				A7888F6926EFABC4005B73C0 /* DirectoryTreeView.swift in Sources */,
 				A7B30F7E2622F648002907CD /* DirectoryInfo.swift in Sources */,
 				A7888F6B26EFABE5005B73C0 /* FileSystemManager.swift in Sources */,
 				A7C7AE5726075F1F0043457F /* ContentView.swift in Sources */,

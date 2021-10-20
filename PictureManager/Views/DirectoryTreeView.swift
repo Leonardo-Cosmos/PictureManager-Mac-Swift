@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct DirectoryView: View {
+struct DirectoryTreeView: View {
     
     @State var rootDirs = [DirectoryInfo]()
     
@@ -117,8 +117,8 @@ struct DirectoryView: View {
     }
 }
 
-struct DirectoryView_Previews: PreviewProvider {
+struct DirectoryTreeView_Previews: PreviewProvider {
     static var previews: some View {
-        DirectoryView()
+        DirectoryTreeView()
     }
 }

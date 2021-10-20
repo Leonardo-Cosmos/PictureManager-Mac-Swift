@@ -19,7 +19,7 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            DirectoryView()
+            DirectoryTreeView()
             List(files, id: \.id) { file in
                 Text(file.name)
             }
