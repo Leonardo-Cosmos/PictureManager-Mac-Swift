@@ -8,11 +8,14 @@
 import Foundation
 
 class DirectoryInfo: Identifiable, Hashable, Equatable, ObservableObject {
+    
     static func == (lhs: DirectoryInfo, rhs: DirectoryInfo) -> Bool {
         lhs.url == rhs.url
     }
     
     let id = UUID()
+    
+    let url: URL
     
     var children: [DirectoryInfo]?
     
@@ -20,8 +23,6 @@ class DirectoryInfo: Identifiable, Hashable, Equatable, ObservableObject {
         self.url = url
         self.children = children
     }
-    
-    let url: URL
     var name: String {
         url.lastPathComponent
     }
