@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A70B17B1271BD0A6006E5462 /* FileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70B17B0271BD0A6006E5462 /* FileListView.swift */; };
 		A7888F6926EFABC4005B73C0 /* DirectoryTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7888F6826EFABC4005B73C0 /* DirectoryTreeView.swift */; };
 		A7888F6B26EFABE5005B73C0 /* FileSystemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7888F6A26EFABE5005B73C0 /* FileSystemManager.swift */; };
 		A78E39492610C42D00479D78 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78E39482610C42D00479D78 /* MainView.swift */; };
@@ -40,6 +41,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A70B17B0271BD0A6006E5462 /* FileListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileListView.swift; sourceTree = "<group>"; };
 		A7888F6826EFABC4005B73C0 /* DirectoryTreeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DirectoryTreeView.swift; sourceTree = "<group>"; };
 		A7888F6A26EFABE5005B73C0 /* FileSystemManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileSystemManager.swift; sourceTree = "<group>"; };
 		A78E39482610C42D00479D78 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
@@ -101,6 +103,7 @@
 				A7C7AE5626075F1F0043457F /* ContentView.swift */,
 				A78E39482610C42D00479D78 /* MainView.swift */,
 				A7888F6826EFABC4005B73C0 /* DirectoryTreeView.swift */,
+				A70B17B0271BD0A6006E5462 /* FileListView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -312,6 +315,7 @@
 				A7888F6B26EFABE5005B73C0 /* FileSystemManager.swift in Sources */,
 				A7C7AE5726075F1F0043457F /* ContentView.swift in Sources */,
 				A78E39492610C42D00479D78 /* MainView.swift in Sources */,
+				A70B17B1271BD0A6006E5462 /* FileListView.swift in Sources */,
 				A7C7AE5526075F1F0043457F /* AppDelegate.swift in Sources */,
 				A7B30F762622F536002907CD /* FileInfo.swift in Sources */,
 				A7B30F832622FC85002907CD /* ModelData.swift in Sources */,

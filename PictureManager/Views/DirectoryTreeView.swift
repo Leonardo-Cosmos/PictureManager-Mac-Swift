@@ -22,13 +22,13 @@ struct DirectoryTreeView: View {
     var body: some View {
         
         VStack {
-            List(rootDirs, children: \.children, selection: $singleSelection) { node in
-                NavigationLink(destination: /*@START_MENU_TOKEN@*/Text("Destination")/*@END_MENU_TOKEN@*/)
+            List(rootDirs, children: \.children, selection: $singleSelection) { dir in
+                NavigationLink(destination: FileListView(dirPath: dir.url))
                 {
-                    Text(node.name).font(.subheadline)
+                    Text(dir.name).font(.subheadline)
                 }
             
-            }.navigationTitle("Folders")
+            }.navigationTitle("Directories")
             .onChange(of: singleSelection, perform: { value in
                 if let selectedDirId = value {
                     print("Changed directory selection: \(selectedDirId)")
@@ -65,19 +65,18 @@ struct DirectoryTreeView: View {
                 }.help(Text("Remove directory"))
                 
                 Button("🔄") {
-                    rootDirs.append(DirectoryInfo(url: URL(fileURLWithPath: ".")))
-                    rootDirs.removeLast()
+                    refreshDirTree()
                 }
             }
         }
     }
     
-    func createDirInfo(path: String, with consume: (DirectoryInfo) -> Void = { _ in return }) -> DirectoryInfo {
+    private func createDirInfo(path: String, with consume: (DirectoryInfo) -> Void = { _ in return }) -> DirectoryInfo {
         let url = URL(fileURLWithPath: path, isDirectory: true)
         return createDirInfo(url: url, with: consume)
     }
     
-    func createDirInfo(url: URL, with consume: (DirectoryInfo) -> Void = { _ in return }) -> DirectoryInfo {
+    private func createDirInfo(url: URL, with consume: (DirectoryInfo) -> Void = { _ in return }) -> DirectoryInfo {
         let dir = DirectoryInfo(url: url)
         
         consume(dir)
@@ -87,7 +86,7 @@ struct DirectoryTreeView: View {
         return dir
     }
     
-    func destroyDirInfo(id: UUID) -> Void {
+    private func destroyDirInfo(id: UUID) -> Void {
         if let dir = dirIdDict[id] {
             if let subDirs = dir.children {
                 for subDir in subDirs {
@@ -96,13 +95,18 @@ struct DirectoryTreeView: View {
             }
             
             dirIdDict.removeValue(forKey: id)
-            print("Removed \(dir.url) from dictionary.")
+            print("Removed \(dir.url.path) from dictionary.")
         }
+    }
+    
+    private func refreshDirTree() {
+        rootDirs.append(DirectoryInfo(url: URL(fileURLWithPath: ".")))
+        rootDirs.removeLast()
     }
     
     func onDirSelected(id: UUID) -> Void {
         if let selectedDir = dirIdDict[id] {
-            print("Selected directory path: \(selectedDir.url).")
+            print("Selected directory path: \(selectedDir.url.path)")
             if selectedDir.children == nil {
                 selectedDir.children = []
                 
@@ -111,7 +115,9 @@ struct DirectoryTreeView: View {
                     selectedDir.children!.append(createDirInfo(path: subDir))
                 }
                 
-                print("Appended sub directories of \(selectedDir.url).")
+                print("Appended sub directories of \(selectedDir.url.path)")
+                
+                refreshDirTree()
             }
         }
     }
