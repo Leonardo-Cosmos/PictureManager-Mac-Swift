@@ -7,8 +7,6 @@
 
 import SwiftUI
 
-
-
 struct ContentView: View {
 
     @State var files = [
@@ -20,7 +18,6 @@ struct ContentView: View {
         }.navigationViewStyle(DoubleColumnNavigationViewStyle())
     }
 }
-
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {

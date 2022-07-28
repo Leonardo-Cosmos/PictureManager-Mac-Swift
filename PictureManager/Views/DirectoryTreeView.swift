@@ -28,7 +28,7 @@ struct DirectoryTreeView: View {
                     Text(dir.name).font(.subheadline)
                 }
             
-            }.navigationTitle("Directories")
+            }
             .onChange(of: singleSelection, perform: { value in
                 if let selectedDirId = value {
                     print("Changed directory selection: \(selectedDirId)")
@@ -47,27 +47,18 @@ struct DirectoryTreeView: View {
 //                }
             
             HStack {
-                Button("➕") {
-                    if let dirUrl = FileSystemManager.openDirectoryPanel() {
-                        self.rootDirs.append(createDirInfo(url: dirUrl))
-                    }
-                }.help(Text("Add directory"))
+                Button(action: addDir) {
+                    Label("Add Folder", systemImage: "plus")
+                }.help(Text("Add Folder"))
                 
-                Button("➖") {
-                    if let selectedDirId = singleSelection {
-                        if self.rootDirs.contains(where: { dir in dir.id == selectedDirId}) {
-                            destroyDirInfo(id: selectedDirId)
-                            self.rootDirs.removeAll { dir in dir.id == selectedDirId }
-                        } else {
-                            print("Selected directory isn't on root level, it won't be removed.")
-                        }
-                    }
-                }.help(Text("Remove directory"))
+                Button(action: removeDir) {
+                    Label("Remove Folder", systemImage: "minus")
+                }.help(Text("Remove Folder"))
                 
-                Button("🔄") {
-                    refreshDirTree()
+                Button(action: refreshDirTree) {
+                    Label("Fresh Tree View", systemImage: "arrow.2.circlepath")
                 }
-            }
+            }.labelStyle(.iconOnly)
         }
     }
     
@@ -96,6 +87,23 @@ struct DirectoryTreeView: View {
             
             dirIdDict.removeValue(forKey: id)
             print("Removed \(dir.url.path) from dictionary.")
+        }
+    }
+    
+    private func addDir() {
+        if let dirUrl = FileSystemManager.openDirectoryPanel() {
+            self.rootDirs.append(createDirInfo(url: dirUrl))
+        }
+    }
+    
+    private func removeDir() {
+        if let selectedDirId = singleSelection {
+            if self.rootDirs.contains(where: { dir in dir.id == selectedDirId}) {
+                destroyDirInfo(id: selectedDirId)
+                self.rootDirs.removeAll { dir in dir.id == selectedDirId }
+            } else {
+                print("Selected directory isn't on root level, it won't be removed.")
+            }
         }
     }
     
