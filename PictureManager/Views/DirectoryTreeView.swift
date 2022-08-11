@@ -9,6 +9,9 @@ import SwiftUI
 
 struct DirectoryTreeView: View {
     
+    @AppStorage("FolderTreeView.folders")
+    private var rootDirPaths: [String] = []
+
     @State var rootDirs = [DirectoryInfo]()
     
     @State var dirIdDict = [UUID: DirectoryInfo]()
@@ -59,6 +62,12 @@ struct DirectoryTreeView: View {
                     Label("Fresh Tree View", systemImage: "arrow.2.circlepath")
                 }
             }.labelStyle(.iconOnly)
+        }.onAppear(perform: loadRootDirPaths)
+    }
+    
+    private func loadRootDirPaths() {
+        rootDirPaths.forEach { path in
+            rootDirs.append(createDirInfo(path: path))
         }
     }
     
@@ -92,15 +101,19 @@ struct DirectoryTreeView: View {
     
     private func addDir() {
         if let dirUrl = FileSystemManager.openDirectoryPanel() {
-            self.rootDirs.append(createDirInfo(url: dirUrl))
+            rootDirs.append(createDirInfo(url: dirUrl))
+            rootDirPaths.append(dirUrl.path)
         }
     }
     
     private func removeDir() {
         if let selectedDirId = singleSelection {
-            if self.rootDirs.contains(where: { dir in dir.id == selectedDirId}) {
+            if rootDirs.contains(where: { dir in dir.id == selectedDirId}) {
                 destroyDirInfo(id: selectedDirId)
-                self.rootDirs.removeAll { dir in dir.id == selectedDirId }
+                if let index = rootDirs.firstIndex(where: { dir in dir.id == selectedDirId}) {
+                    rootDirs.remove(at: index)
+                    rootDirPaths.remove(at: index)
+                }
             } else {
                 print("Selected directory isn't on root level, it won't be removed.")
             }
