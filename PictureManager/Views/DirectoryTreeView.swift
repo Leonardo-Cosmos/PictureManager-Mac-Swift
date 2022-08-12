@@ -66,8 +66,21 @@ struct DirectoryTreeView: View {
     }
     
     private func loadRootDirPaths() {
-        rootDirPaths.forEach { path in
-            rootDirs.append(createDirInfo(path: path))
+        rootDirPaths.forEach { dataString in
+            
+            if let bookmarkData = Data(base64Encoded: dataString) {
+                var isStale = false
+                do {
+                    let dirUrl = try URL(resolvingBookmarkData: bookmarkData, bookmarkDataIsStale: &isStale)
+                    
+                    _ = dirUrl.startAccessingSecurityScopedResource()
+                    rootDirs.append(createDirInfo(url: dirUrl))
+                    dirUrl.stopAccessingSecurityScopedResource()
+                    
+                } catch let error as NSError {
+                    print("Cannot resolve security-scoped bookmark: \(error)")
+                }
+            }
         }
     }
     
@@ -102,7 +115,13 @@ struct DirectoryTreeView: View {
     private func addDir() {
         if let dirUrl = FileSystemManager.openDirectoryPanel() {
             rootDirs.append(createDirInfo(url: dirUrl))
-            rootDirPaths.append(dirUrl.path)
+            
+            do {
+                let bookmarkData = try dirUrl.bookmarkData()
+                rootDirPaths.append(bookmarkData.base64EncodedString())
+            } catch let error as NSError {
+                print("Cannot create security-scoped bookmark: \(error)")
+            }
         }
     }
     
