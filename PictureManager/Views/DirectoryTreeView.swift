@@ -35,7 +35,7 @@ struct DirectoryTreeView: View {
             .onChange(of: singleSelection, perform: { value in
                 if let selectedDirId = value {
                     print("Changed directory selection: \(selectedDirId)")
-                    onDirSelected(id: selectedDirId)
+                    loadSubDirs(id: selectedDirId)
                 } else {
                     print("No directory selected")
                 }
@@ -95,7 +95,7 @@ struct DirectoryTreeView: View {
         consume(dir)
         
         dirIdDict[dir.id] = dir
-        print("Added \(dir.url) to dictionary.")
+        print("Added \(dir.url.path) to dictionary.")
         return dir
     }
     
@@ -144,9 +144,9 @@ struct DirectoryTreeView: View {
         rootDirs.removeLast()
     }
     
-    func onDirSelected(id: UUID) -> Void {
+    func loadSubDirs(id: UUID) -> Void {
         if let selectedDir = dirIdDict[id] {
-            print("Selected directory path: \(selectedDir.url.path)")
+            print("Selected directory: \(selectedDir.url.lastPathComponent)")
             if selectedDir.children == nil {
                 selectedDir.children = []
                 
@@ -155,7 +155,7 @@ struct DirectoryTreeView: View {
                     selectedDir.children!.append(createDirInfo(path: subDir))
                 }
                 
-                print("Appended sub directories of \(selectedDir.url.path)")
+                print("Appended sub directories of \(selectedDir.url.lastPathComponent)")
                 
                 refreshDirTree()
             }

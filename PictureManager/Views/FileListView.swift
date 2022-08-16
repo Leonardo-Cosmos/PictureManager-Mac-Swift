@@ -15,6 +15,7 @@ struct FileListView: View {
         case name = "name"
         case dateModified = "dateModified"
         case dateCreated = "dateCreated"
+        case size = "size"
         
         var id: SortBy {
             return self
@@ -36,27 +37,46 @@ struct FileListView: View {
     @AppStorage("FileListView.viewStyle")
     private var viewStyle: ViewStyle = .list
     
-    @State var files = [FileInfo]()
+    @State var fileInfos = [FileInfo]()
+    
+    @State private var multiSelection = Set<UUID>()
     
     var body: some View {
-        List(files) { file in
-            createItem(file: file)
-        }
-        .toolbar {
-            ToolbarItem {
-                Button(action: switchToListView) {
-                    Label("List", systemImage: "list.bullet")
+        NavigationView {
+            List(fileInfos, selection: $multiSelection) { file in
+                NavigationLink() {
+                    FileDetailView(fileUrl: file.url)
+                } label: {
+                    HStack {
+                        if file.url.pathExtension == "jpg" {
+                            Image(nsImage: NSImage(byReferencing: file.url))
+                                .resizable()
+                                .aspectRatio(contentMode: ContentMode.fit)
+                                .frame(width: 64, height: 64)
+                                .cornerRadius(5)
+                        }
+                        Text(file.name)
+                    }
                 }
+                
             }
         }
         .navigationTitle(dirPath.lastPathComponent)
-        .onAppear(perform: self.loadFiles)
+        .onAppear(perform: loadFiles)
     }
     
     private func loadFiles() {
-        let files = FileSystemManager.Default.filesOfDirectory(atPath: dirPath.path)
-        print("List files of directory \(dirPath.path), number of files \(files.count)")
-        self.files = files.map { file in FileInfo(url: URL(fileURLWithPath: file)) }
+        let filePaths = FileSystemManager.Default.filesOfDirectory(atPath: dirPath.path)
+        print("List files of directory \(dirPath.path), number of files \(filePaths.count)")
+        var fileInfos = filePaths.map { filePath in FileInfo(url: URL(fileURLWithPath: filePath)) }
+        
+        if sortBy == .name {
+            fileInfos.sort { lFile, rFile in
+                return lFile.url.path < rFile.url.path
+            }
+        }
+        
+        self.fileInfos = fileInfos
     }
     
     @ViewBuilder private func createItem(file: FileInfo) -> some View {
@@ -64,20 +84,20 @@ struct FileListView: View {
         case .icon:
             HStack {
                 if file.url.pathExtension == "jpg" {
-                    AsyncImage(url: file.url)
-                        .frame(width: 128, height: 128)
+                    AsyncImage(url: file.url) { image in
+                        image.resizable()
+                    } placeholder: {
+                        ProgressView()
+                    }.frame(width: 128, height: 128)
                 }
                 Text(file.name)
             }
         case .list:
             VStack {
                 if file.url.pathExtension == "jpg" {
-                    AsyncImage(url: file.url) { image in
-                        image.resizable()
-                    } placeholder: {
-                        ProgressView()
-                    }
-                    .frame(width: 64, height: 64)
+                    Image(nsImage: NSImage(byReferencing: file.url))
+                        .resizable()
+                        .frame(width: 64, height: 64)
                 }
                 Text(file.name)
             }
@@ -95,6 +115,6 @@ struct FileListView: View {
 
 struct FileListView_Previews: PreviewProvider {
     static var previews: some View {
-        FileListView(dirPath: URL(fileURLWithPath: "/Users/Leonardo"))
+        FileListView(dirPath: URL(fileURLWithPath: "."))
     }
 }

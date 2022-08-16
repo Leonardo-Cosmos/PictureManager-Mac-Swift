@@ -15,7 +15,16 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             DirectoryTreeView()
-        }.navigationViewStyle(DoubleColumnNavigationViewStyle())
+        }
+        .navigationViewStyle(ColumnNavigationViewStyle.columns)
+        .toolbar {
+            ToolbarItem {
+                Button(action: {}) {
+                    Label("List", systemImage: "list.bullet")
+                }
+            }
+        }
+        
     }
 }
 

@@ -2,7 +2,7 @@
 //  ArrayExtension.swift
 //  PictureManager
 //
-//  Created by Leonardo on 2022/8/11.
+//  Created on 2022/8/11.
 //
 
 import Foundation

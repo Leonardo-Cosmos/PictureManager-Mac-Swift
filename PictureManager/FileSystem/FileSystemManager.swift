@@ -111,6 +111,32 @@ class FileSystemManager {
         }
     }
     
+    func attributes(_ filePath: String) throws -> [FileAttributeKey: Any] {
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: filePath)
+            return attributes
+        } catch let error as NSError {
+            print("Cannot get attributes of \(filePath): \(error)")
+            throw error
+        }
+    }
+    
+    static func size(attributes: [FileAttributeKey: Any]) -> UInt64 {
+        return attributes[FileAttributeKey.size] as! UInt64
+    }
+    
+    func size(filePath: String) throws -> UInt64 {
+        return try FileSystemManager.size(attributes: self.attributes(filePath))
+    }
+    
+    static func type(attributes: [FileAttributeKey: Any]) -> String {
+        return attributes[FileAttributeKey.type] as! String
+    }
+    
+    func type(filePath: String) throws -> String {
+        return try FileSystemManager.type(attributes: self.attributes(filePath))
+    }
+    
     static let defaultInstance = FileSystemManager()
     
     static var Default: FileSystemManager {
