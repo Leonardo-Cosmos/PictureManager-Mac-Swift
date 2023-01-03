@@ -6,32 +6,39 @@
 //
 
 import SwiftUI
+import os
 
 struct FileDetailView: View {
-    var fileUrl: URL
+    
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: Self.self)
+    )
+    
+    let fileUrl: URL?
     
     let units = ["bytes", "KB", "MB", "GB"]
     
-    @State private var fileSize = ""
-    
-    @State private var fileType = ""
+    @State private var size = ""
     
     var body: some View {
         VStack {
-            if fileUrl.pathExtension == "jpg" {
-                ImageDetailView(fileUrl: fileUrl)
-            }
-            Text(fileUrl.lastPathComponent)
-            Text(fileSize)
+            ImageDetailView(fileUrl: fileUrl)
+            Text(fileUrl?.lastPathComponent ?? "")
+            Text(size)
                 .font(.caption)
                 .foregroundColor(.secondary)
-        }.onAppear(perform: loadFileAttributes)
+        }.onChange(of: fileUrl, perform: loadFileAttributes)
     }
     
-    private func loadFileAttributes() {
-        if let fileAttributes = try? FileSystemManager.Default.attributes(fileUrl.path) {
-            
-            fileSize = formatFileSize(FileSystemManager.size(attributes: fileAttributes))
+    private func loadFileAttributes(url: URL?) {
+        if url != nil {
+            Self.logger.debug("Load file attribute: \(url!.path)")
+            if let fileAttributes = try? FileSystemManager.Default.attributes(url!.path) {
+                size = formatFileSize(FileSystemManager.size(attributes: fileAttributes))
+            }
+        } else {
+            size = ""
         }
     }
     
@@ -58,6 +65,6 @@ struct FileDetailView: View {
 
 struct FileDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        FileDetailView(fileUrl: URL(fileURLWithPath: "./Resources/Xcode.png"))
+        FileDetailView(fileUrl: nil)
     }
 }

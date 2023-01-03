@@ -6,24 +6,29 @@
 //
 
 import SwiftUI
+import os
 
 struct DirectoryTreeView: View {
+    
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: Self.self)
+    )
     
     @AppStorage("FolderTreeView.folders")
     private var rootDirPaths: [String] = []
 
-    @State var rootDirs = [DirectoryInfo]()
+    @State private var rootDirs = [DirectoryInfo]()
     
-    @State var dirIdDict = [UUID: DirectoryInfo]()
+    @State private var dirIdDict = [UUID: DirectoryInfo]()
     
     @State private var singleSelection: UUID?
     
-    @State var flag = false
+    @State private var flag = false
     
     private let defaultUuid: UUID = UUID()
     
     var body: some View {
-        
         VStack {
             List(rootDirs, children: \.children, selection: $singleSelection) { dir in
                 NavigationLink(destination: FileListView(dirPath: dir.url))
@@ -34,10 +39,10 @@ struct DirectoryTreeView: View {
             }
             .onChange(of: singleSelection, perform: { value in
                 if let selectedDirId = value {
-                    print("Changed directory selection: \(selectedDirId)")
+                    Self.logger.info("Selected directory ID: \(selectedDirId)")
                     loadSubDirs(id: selectedDirId)
                 } else {
-                    print("No directory selected")
+                    Self.logger.info("No directory selected")
                 }
             })
             
@@ -78,7 +83,7 @@ struct DirectoryTreeView: View {
                     dirUrl.stopAccessingSecurityScopedResource()
                     
                 } catch let error as NSError {
-                    print("Cannot resolve security-scoped bookmark: \(error)")
+                    Self.logger.error("Cannot resolve security-scoped bookmark: \(error)")
                 }
             }
         }
@@ -95,7 +100,7 @@ struct DirectoryTreeView: View {
         consume(dir)
         
         dirIdDict[dir.id] = dir
-        print("Added \(dir.url.path) to dictionary.")
+        Self.logger.debug("Added \(dir.url.path) to dictionary.")
         return dir
     }
     
@@ -108,19 +113,20 @@ struct DirectoryTreeView: View {
             }
             
             dirIdDict.removeValue(forKey: id)
-            print("Removed \(dir.url.path) from dictionary.")
+            Self.logger.debug("Removed \(dir.url.path) from dictionary.")
         }
     }
     
     private func addDir() {
         if let dirUrl = FileSystemManager.openDirectoryPanel() {
             rootDirs.append(createDirInfo(url: dirUrl))
+            Self.logger.log("Added root directory: \(dirUrl)")
             
             do {
                 let bookmarkData = try dirUrl.bookmarkData()
                 rootDirPaths.append(bookmarkData.base64EncodedString())
             } catch let error as NSError {
-                print("Cannot create security-scoped bookmark: \(error)")
+                Self.logger.error("Cannot create security-scoped bookmark: \(error)")
             }
         }
     }
@@ -130,11 +136,13 @@ struct DirectoryTreeView: View {
             if rootDirs.contains(where: { dir in dir.id == selectedDirId}) {
                 destroyDirInfo(id: selectedDirId)
                 if let index = rootDirs.firstIndex(where: { dir in dir.id == selectedDirId}) {
+                    let dirName = rootDirs[index].name
+                    Self.logger.log("Removed root directory: \(dirName)")
                     rootDirs.remove(at: index)
                     rootDirPaths.remove(at: index)
                 }
             } else {
-                print("Selected directory isn't on root level, it won't be removed.")
+                Self.logger.info("Selected directory isn't on root level, it won't be removed.")
             }
         }
     }
@@ -146,16 +154,19 @@ struct DirectoryTreeView: View {
     
     func loadSubDirs(id: UUID) -> Void {
         if let selectedDir = dirIdDict[id] {
-            print("Selected directory: \(selectedDir.url.lastPathComponent)")
+            Self.logger.debug("Selected directory: \(selectedDir.url.lastPathComponent)")
             if selectedDir.children == nil {
                 selectedDir.children = []
                 
-                let subDirs = FileSystemManager.Default.directoriesOfDirectory(atPath: selectedDir.url.path)
+                var subDirs = FileSystemManager.Default.directoriesOfDirectory(atPath: selectedDir.url.path)
+                
+                subDirs.sort(by: <)
+                
                 for subDir in subDirs {
                     selectedDir.children!.append(createDirInfo(path: subDir))
                 }
                 
-                print("Appended sub directories of \(selectedDir.url.lastPathComponent)")
+                Self.logger.debug("Appended sub directories of \(selectedDir.url.lastPathComponent)")
                 
                 refreshDirTree()
             }

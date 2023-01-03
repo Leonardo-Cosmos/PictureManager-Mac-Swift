@@ -8,13 +8,16 @@
 import SwiftUI
 
 struct ImageDetailView: View {
-    var fileUrl: URL
+    var fileUrl: URL?
     
     var body: some View {
-        Image(nsImage: NSImage(byReferencing: fileUrl))
-            .resizable()
-            .aspectRatio(contentMode: ContentMode.fit)
-            .frame(width: 256, height: 256)
+        if fileUrl?.pathExtension == "jpg" {
+            Image(nsImage: NSImage(byReferencing: fileUrl!))
+                .resizable()
+                .aspectRatio(contentMode: ContentMode.fit)
+                .frame(minWidth: 256, maxWidth: .infinity,
+                       minHeight: 256, maxHeight: .infinity)
+        }
     }
     
     private func loadFileAttributes() {

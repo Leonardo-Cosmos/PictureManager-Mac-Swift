@@ -6,8 +6,14 @@
 //
 
 import SwiftUI
+import os
 
 struct FileListView: View {
+    
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: Self.self)
+    )
     
     let dirPath: URL
     
@@ -39,27 +45,36 @@ struct FileListView: View {
     
     @State var fileInfos = [FileInfo]()
     
+    @State private var fileIdDict = [UUID: FileInfo]()
+    
     @State private var multiSelection = Set<UUID>()
     
+    @State private var selectedFileUrl: URL? = nil
+    
     var body: some View {
-        NavigationView {
+        HSplitView {
             List(fileInfos, selection: $multiSelection) { file in
-                NavigationLink() {
-                    FileDetailView(fileUrl: file.url)
-                } label: {
-                    HStack {
-                        if file.url.pathExtension == "jpg" {
-                            Image(nsImage: NSImage(byReferencing: file.url))
-                                .resizable()
-                                .aspectRatio(contentMode: ContentMode.fit)
-                                .frame(width: 64, height: 64)
-                                .cornerRadius(5)
-                        }
-                        Text(file.name)
+                HStack {
+                    if file.url.pathExtension == "jpg" {
+                        Image(nsImage: NSImage(byReferencing: file.url))
+                            .resizable()
+                            .aspectRatio(contentMode: ContentMode.fit)
+                            .frame(width: 64, height: 64)
+                            .cornerRadius(5)
                     }
+                    Text(file.name)
                 }
-                
             }
+            .frame(minWidth: 100)
+            .layoutPriority(1)
+            .onChange(of: multiSelection, perform: { selections in
+                if selections.count == 1, let fileInfo = fileIdDict[selections.first!] {
+                    selectedFileUrl = fileInfo.url
+                }
+            })
+            
+            FileDetailView(fileUrl: selectedFileUrl)
+                .frame(minWidth: 100, maxWidth: .infinity, maxHeight: .infinity)
         }
         .navigationTitle(dirPath.lastPathComponent)
         .onAppear(perform: loadFiles)
@@ -67,16 +82,22 @@ struct FileListView: View {
     
     private func loadFiles() {
         let filePaths = FileSystemManager.Default.filesOfDirectory(atPath: dirPath.path)
-        print("List files of directory \(dirPath.path), number of files \(filePaths.count)")
-        var fileInfos = filePaths.map { filePath in FileInfo(url: URL(fileURLWithPath: filePath)) }
+        Self.logger.debug("List files of directory \(dirPath.path), number of files \(filePaths.count)")
+        
+        fileInfos.removeAll()
+        fileIdDict.removeAll()
+        
+        filePaths.forEach { filePath in
+            let fileInfo = FileInfo(url: URL(fileURLWithPath: filePath))
+            fileInfos.append(fileInfo)
+            fileIdDict[fileInfo.id] = fileInfo
+        }
         
         if sortBy == .name {
             fileInfos.sort { lFile, rFile in
                 return lFile.url.path < rFile.url.path
             }
         }
-        
-        self.fileInfos = fileInfos
     }
     
     @ViewBuilder private func createItem(file: FileInfo) -> some View {
