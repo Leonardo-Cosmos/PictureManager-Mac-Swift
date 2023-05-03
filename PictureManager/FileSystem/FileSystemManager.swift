@@ -23,33 +23,28 @@ class FileSystemManager {
      - Returns: An array of NSString objects, each of which identifies a file, directory, or symbolic link contained in path. Returns an empty array if the directory exists but has no contents.
 
      */
-    func contentsOfDirectory(atPath path: String) -> [String] {
-        var contents: [String]
-        do {
-            contents = try fileManager.contentsOfDirectory(atPath: path)
-            contents = contents.map { content in "\(path)/\(content)" }
-        } catch let error as NSError {
-            print("Cannot get contents: \(error)")
-            contents = []
-        }
+    func contentsOfDirectory(atPath path: String) throws -> [String] {
+        var contents = try fileManager.contentsOfDirectory(atPath: path)
+        contents = contents.map { content in "\(path)/\(content)" }
+        
         return contents
     }
     
-    private func filterContentOfDirectory(atPath path: String, _ isIncluded: (String) -> Bool) -> [String] {
-        let contents = contentsOfDirectory(atPath: path)
+    private func filterContentOfDirectory(atPath path: String, _ isIncluded: (String) -> Bool) throws -> [String] {
+        let contents = try contentsOfDirectory(atPath: path)
         return contents.filter(isIncluded)
     }
     
-    func filesOfDirectory(atPath path: String) -> [String] {
-        return filterContentOfDirectory(atPath: path) { content in
+    func filesOfDirectory(atPath path: String) throws -> [String] {
+        return try filterContentOfDirectory(atPath: path) { content in
             var isDirectory: ObjCBool = false
             let exists = fileManager.fileExists(atPath: content, isDirectory: &isDirectory)
             return exists && !isDirectory.boolValue
         }
     }
     
-    func directoriesOfDirectory(atPath path: String) -> [String] {
-        return filterContentOfDirectory(atPath: path) { content in
+    func directoriesOfDirectory(atPath path: String) throws -> [String] {
+        return try filterContentOfDirectory(atPath: path) { content in
             var isDirectory: ObjCBool = false
             let exists = fileManager.fileExists(atPath: content, isDirectory: &isDirectory)
             return exists && isDirectory.boolValue

@@ -19,14 +19,17 @@ class DirectoryInfo: Identifiable, Hashable, Equatable, ObservableObject {
     
     var children: [DirectoryInfo]?
     
+    var errorMessage: String?
+    
     init(url: URL, children: [DirectoryInfo]? = nil) {
         self.url = url
         self.children = children
     }
+    
     var name: String {
         url.lastPathComponent
     }
-    
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(url)
     }

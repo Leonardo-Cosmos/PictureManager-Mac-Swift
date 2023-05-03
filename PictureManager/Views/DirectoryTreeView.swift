@@ -33,7 +33,12 @@ struct DirectoryTreeView: View {
             List(rootDirs, children: \.children, selection: $singleSelection) { dir in
                 NavigationLink(destination: FileListView(dirPath: dir.url))
                 {
-                    Text(dir.name).font(.subheadline)
+                    VStack {
+                        Text(dir.name).font(.headline)
+                        if let errorMessage = dir.errorMessage {
+                            Text(errorMessage).font(.subheadline)
+                        }
+                    }
                 }
             
             }
@@ -158,15 +163,20 @@ struct DirectoryTreeView: View {
             if selectedDir.children == nil {
                 selectedDir.children = []
                 
-                var subDirs = FileSystemManager.Default.directoriesOfDirectory(atPath: selectedDir.url.path)
-                
-                subDirs.sort(by: <)
-                
-                for subDir in subDirs {
-                    selectedDir.children!.append(createDirInfo(path: subDir))
+                do {
+                    var subDirs = try FileSystemManager.Default.directoriesOfDirectory(atPath: selectedDir.url.path)
+                    subDirs.sort(by: <)
+                    
+                    for subDir in subDirs {
+                        selectedDir.children!.append(createDirInfo(path: subDir))
+                    }
+                    
+                    Self.logger.debug("Appended sub directories of: \(selectedDir.url.lastPathComponent)")
+                    
+                } catch let error as NSError {
+                    Self.logger.error("Cannot list subdirectories. \(error)")
+                    selectedDir.errorMessage = "Cannot load"
                 }
-                
-                Self.logger.debug("Appended sub directories of \(selectedDir.url.lastPathComponent)")
                 
                 refreshDirTree()
             }

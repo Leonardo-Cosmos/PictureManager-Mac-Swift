@@ -81,8 +81,17 @@ struct FileListView: View {
     }
     
     private func loadFiles() {
-        let filePaths = FileSystemManager.Default.filesOfDirectory(atPath: dirPath.path)
-        Self.logger.debug("List files of directory \(dirPath.path), number of files \(filePaths.count)")
+        Self.logger.debug("List files of directory \(dirPath.path)")
+        
+        var filePaths: [String]
+        do {
+            filePaths = try FileSystemManager.Default.filesOfDirectory(atPath: dirPath.path)
+        } catch let error as NSError {
+            Self.logger.error("Cannot list files. \(error)")
+            return
+        }
+        
+        Self.logger.debug("Number of files \(filePaths.count)")
         
         fileInfos.removeAll()
         fileIdDict.removeAll()
