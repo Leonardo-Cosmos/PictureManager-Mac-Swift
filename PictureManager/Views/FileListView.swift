@@ -55,7 +55,7 @@ struct FileListView: View {
         HSplitView {
             List(fileInfos, selection: $multiSelection) { file in
                 HStack {
-                    if file.url.pathExtension == "jpg" {
+                    if file.isImage {
                         Image(nsImage: NSImage(byReferencing: file.url))
                             .resizable()
                             .aspectRatio(contentMode: ContentMode.fit)
@@ -63,6 +63,14 @@ struct FileListView: View {
                             .cornerRadius(5)
                     }
                     Text(file.name)
+                }
+                .onAppear {
+                    if !file.loaded {
+                        if ViewHelper.isImage(file.url) {
+                            file.isImage = true
+                        }
+                        file.loaded = true
+                    }
                 }
             }
             .frame(minWidth: 100)

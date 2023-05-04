@@ -123,7 +123,7 @@ struct DirectoryTreeView: View {
     }
     
     private func addDir() {
-        if let dirUrl = FileSystemManager.openDirectoryPanel() {
+        if let dirUrl = ViewHelper.openDirectoryPanel() {
             rootDirs.append(createDirInfo(url: dirUrl))
             Self.logger.log("Added root directory: \(dirUrl)")
             

@@ -17,8 +17,15 @@ class FileInfo: Identifiable, Hashable, Equatable, ObservableObject {
     
     let url: URL
     
+    var loaded: Bool
+    
+    var isImage: Bool
+    
     init(url: URL) {
         self.url = url
+        
+        self.loaded = false
+        self.isImage = false
     }
     
     var name: String {

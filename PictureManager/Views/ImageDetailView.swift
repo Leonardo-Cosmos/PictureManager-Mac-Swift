@@ -11,7 +11,7 @@ struct ImageDetailView: View {
     var fileUrl: URL?
     
     var body: some View {
-        if fileUrl?.pathExtension == "jpg" {
+        if ViewHelper.isImage(fileUrl) {
             Image(nsImage: NSImage(byReferencing: fileUrl!))
                 .resizable()
                 .aspectRatio(contentMode: ContentMode.fit)

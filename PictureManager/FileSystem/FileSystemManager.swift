@@ -6,9 +6,14 @@
 //
 
 import Foundation
-import SwiftUI
+import os
 
-class FileSystemManager {
+struct FileSystemManager {
+    
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: Self.self)
+    )
     
     private let fileManager = FileManager.default
     
@@ -21,7 +26,7 @@ class FileSystemManager {
      - Parameter path: The path to the directory whose contents you want to enumerate.
      
      - Returns: An array of NSString objects, each of which identifies a file, directory, or symbolic link contained in path. Returns an empty array if the directory exists but has no contents.
-
+     
      */
     func contentsOfDirectory(atPath path: String) throws -> [String] {
         var contents = try fileManager.contentsOfDirectory(atPath: path)
@@ -56,7 +61,7 @@ class FileSystemManager {
         do {
             files = try fileManager.contentsOfDirectory(atPath: dirPath)
         } catch let error as NSError {
-            print("Cannot get contents: \(error)")
+            Self.logger.error("Cannot get contents: \(error)")
             return
         }
         
@@ -74,11 +79,11 @@ class FileSystemManager {
         
         let srcPath = "\(dirPath)/\(srcFileName)"
         let dstPath = "\(dirPath)/\(dstFileName)"
-        print("Rename \(srcFileName) to \(dstFileName)")
+        Self.logger.debug("Rename \(srcFileName) to \(dstFileName)")
         do {
             try fileManager.moveItem(atPath: srcPath, toPath: dstPath)
         } catch let error as NSError {
-            print("Cannot rename file: \(error)")
+            Self.logger.error("Cannot rename file: \(error)")
         }
     }
     
@@ -86,11 +91,11 @@ class FileSystemManager {
         
         let srcPath = "\(srcDirPath)/\(fileName)"
         let dstPath = "\(dstDirPath)/\(fileName)"
-        print("Move \(fileName)")
+        Self.logger.debug("Move \(srcPath) to \(dstPath)")
         do {
             try fileManager.moveItem(atPath: srcPath, toPath: dstPath)
         } catch let error as NSError {
-            print("Cannot move file: \(error)")
+            Self.logger.error("Cannot move file: \(error)")
         }
     }
     
@@ -98,11 +103,11 @@ class FileSystemManager {
         
         let srcPath = "\(srcDirPath)/\(fileName)"
         let dstPath = "\(dstDirPath)/\(fileName)"
-        print("Copy \(fileName)")
+        Self.logger.debug("Copy \(srcPath) to \(dstPath)")
         do {
             try fileManager.copyItem(atPath: srcPath, toPath: dstPath)
         } catch let error as NSError {
-            print("Cannot copy file: \(error)")
+            Self.logger.error("Cannot copy file: \(error)")
         }
     }
     
@@ -111,7 +116,7 @@ class FileSystemManager {
             let attributes = try fileManager.attributesOfItem(atPath: filePath)
             return attributes
         } catch let error as NSError {
-            print("Cannot get attributes of \(filePath): \(error)")
+            Self.logger.error("Cannot get attributes of \(filePath): \(error)")
             throw error
         }
     }
@@ -136,17 +141,5 @@ class FileSystemManager {
     
     static var Default: FileSystemManager {
         defaultInstance
-    }
-    
-    static func openDirectoryPanel() -> URL? {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = false
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        if panel.runModal() == .OK {
-            return panel.url
-        } else {
-            return nil
-        }
     }
 }

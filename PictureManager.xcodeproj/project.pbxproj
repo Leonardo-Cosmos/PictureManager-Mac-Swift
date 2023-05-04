@@ -24,6 +24,7 @@
 		A72C47EA28A79D1300100C9E /* ImageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72C47E928A79D1300100C9E /* ImageDetailView.swift */; };
 		A72C47ED28A7ECA200100C9E /* Xcode.png in Resources */ = {isa = PBXBuildFile; fileRef = A72C47EC28A7ECA200100C9E /* Xcode.png */; };
 		A767C42328A4BB830012C345 /* ArrayExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = A767C42228A4BB830012C345 /* ArrayExtension.swift */; };
+		A77A89142A0237F6000207FC /* ViewHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77A89132A0237F6000207FC /* ViewHelper.swift */; };
 		A77AF8BF28AB7F78002391D5 /* FileDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77AF8BE28AB7F78002391D5 /* FileDetailView.swift */; };
 /* End PBXBuildFile section */
 
@@ -66,6 +67,7 @@
 		A72C47E928A79D1300100C9E /* ImageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageDetailView.swift; sourceTree = "<group>"; };
 		A72C47EC28A7ECA200100C9E /* Xcode.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Xcode.png; sourceTree = "<group>"; };
 		A767C42228A4BB830012C345 /* ArrayExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrayExtension.swift; sourceTree = "<group>"; };
+		A77A89132A0237F6000207FC /* ViewHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewHelper.swift; sourceTree = "<group>"; };
 		A77AF8BE28AB7F78002391D5 /* FileDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -174,6 +176,7 @@
 				A70C4EB828900002000B60FB /* MainView.swift */,
 				A72C47E928A79D1300100C9E /* ImageDetailView.swift */,
 				A77AF8BE28AB7F78002391D5 /* FileDetailView.swift */,
+				A77A89132A0237F6000207FC /* ViewHelper.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -331,6 +334,7 @@
 				A70C4EC6289001FE000B60FB /* FileSystemManager.swift in Sources */,
 				A72C47EA28A79D1300100C9E /* ImageDetailView.swift in Sources */,
 				A767C42328A4BB830012C345 /* ArrayExtension.swift in Sources */,
+				A77A89142A0237F6000207FC /* ViewHelper.swift in Sources */,
 				A70C4EC3289001F4000B60FB /* DirectoryInfo.swift in Sources */,
 				A70C4EBC28900003000B60FB /* MainView.swift in Sources */,
 				A70C4EC2289001F4000B60FB /* FileInfo.swift in Sources */,
