@@ -55,20 +55,12 @@ struct FileListView: View {
         HSplitView {
             List(fileInfos, selection: $multiSelection) { file in
                 HStack {
-                    if file.isImage {
-                        Image(nsImage: NSImage(byReferencing: file.url))
-                            .resizable()
-                            .aspectRatio(contentMode: ContentMode.fit)
-                            .frame(width: 64, height: 64)
-                            .cornerRadius(5)
-                    }
+                    ImageView(file: file)
                     Text(file.name)
                 }
                 .onAppear {
                     if !file.loaded {
-                        if ViewHelper.isImage(file.url) {
-                            file.isImage = true
-                        }
+                        loadImage(file: file)
                         file.loaded = true
                     }
                 }
@@ -142,12 +134,44 @@ struct FileListView: View {
         }
     }
     
+    private func loadImage(file: FileInfo) {
+        let fileUrl = file.url
+        
+        if !ViewHelper.isImage(fileUrl) {
+            return
+        }
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            guard let nsImage = NSImage(contentsOf: fileUrl) else {
+                return
+            }
+            
+            DispatchQueue.main.async {
+                file.image = Image(nsImage: nsImage)
+            }
+        }
+    }
+    
     private func switchToIconView() {
         
     }
     
     private func switchToListView() {
         
+    }
+}
+
+struct ImageView: View {
+    @ObservedObject var file: FileInfo
+    
+    var body: some View {
+        if let image = file.image {
+            image
+                .resizable()
+                .aspectRatio(contentMode: ContentMode.fit)
+                .frame(width: 64, height: 64)
+                .cornerRadius(5)
+        }
     }
 }
 

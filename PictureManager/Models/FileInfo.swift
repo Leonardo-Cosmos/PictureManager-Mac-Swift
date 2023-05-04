@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 class FileInfo: Identifiable, Hashable, Equatable, ObservableObject {
     
@@ -19,13 +20,12 @@ class FileInfo: Identifiable, Hashable, Equatable, ObservableObject {
     
     var loaded: Bool
     
-    var isImage: Bool
+    @Published var image: Image?
     
     init(url: URL) {
         self.url = url
         
         self.loaded = false
-        self.isImage = false
     }
     
     var name: String {
