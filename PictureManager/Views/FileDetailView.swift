@@ -28,7 +28,8 @@ struct FileDetailView: View {
             Text(size)
                 .font(.caption)
                 .foregroundColor(.secondary)
-        }.onChange(of: fileUrl, perform: loadFileAttributes)
+        }
+        .onChange(of: fileUrl, perform: loadFileAttributes)
     }
     
     private func loadFileAttributes(url: URL?) {

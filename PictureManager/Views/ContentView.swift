@@ -6,25 +6,71 @@
 //
 
 import SwiftUI
+import os
 
 struct ContentView: View {
+    
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: Self.self)
+    )
 
-    @State var files = [
-    ]
-
+    @AppStorage("ContentView.dirTreeWidth")
+    private var dirTreeWidth: Double = 200
+    
+    private let dirTreeMinWidth: Double = 100
+    
+    private let fileListMinWidth: Double = 200
+    
+    @State private var isDragging = false
+    
+    @State private var selectedDirectoryUrl: URL?
+    
     var body: some View {
-        NavigationView {
-            DirectoryTreeView()
-        }
-        .navigationViewStyle(ColumnNavigationViewStyle.columns)
-        .toolbar {
-            ToolbarItem {
-                Button(action: {}) {
-                    Label("List", systemImage: "list.bullet")
+        HStack(spacing: 0) {
+            
+            DirectoryTreeView(selectedUrl: $selectedDirectoryUrl)
+                .frame(minWidth: dirTreeMinWidth, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(width: dirTreeWidth)
+                .onChange(of: selectedDirectoryUrl) { dirUrl in
+                    guard let url = dirUrl else {
+                        return
+                    }
+                    Self.logger.debug("Selected \(url.lastPathComponent)")
                 }
-            }
+
+            Divider()
+                .frame(width: 3)
+                .overlay(.ultraThickMaterial)
+                .background(Color.gray.opacity(isDragging ? 0.5 : 0))
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            isDragging = true
+                            updateDirTreeViewWidth(value.translation.width)
+                        }
+                        .onEnded { _ in
+                            isDragging = false
+                        }
+                )
+                .onHover { inside in
+                    if inside {
+                        NSCursor.resizeLeftRight.set()
+                    } else {
+                        NSCursor.arrow.set()
+                    }
+                }
+            
+            FileListView(fileDirUrl: selectedDirectoryUrl)
+                .frame(minWidth: fileListMinWidth, maxWidth: .infinity, maxHeight: .infinity)
         }
-        
+    }
+    
+    private func updateDirTreeViewWidth(_ width: CGFloat) {
+        dirTreeWidth += width
+        if dirTreeWidth < dirTreeMinWidth {
+            dirTreeWidth = dirTreeMinWidth
+        }
     }
 }
 

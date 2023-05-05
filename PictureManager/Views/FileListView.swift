@@ -15,44 +15,33 @@ struct FileListView: View {
         category: String(describing: Self.self)
     )
     
-    let dirPath: URL
-    
-    enum SortBy: String, CaseIterable, Identifiable {
-        case name = "name"
-        case dateModified = "dateModified"
-        case dateCreated = "dateCreated"
-        case size = "size"
-        
-        var id: SortBy {
-            return self
-        }
-    }
-    
-    enum ViewStyle: String, CaseIterable, Identifiable {
-        case icon = "icon"
-        case list = "list"
-        
-        var id: ViewStyle {
-            return self
-        }
-    }
-    
+    var fileDirUrl: URL?
+
+    @AppStorage("FileListView.fileDetailWidth")
+    private var fileDetailWidth: Double = 100
+
+    private let fileListMinWidth: Double = 50
+
+    private let fileDetailMinWidth: Double = 50
+
+    @State private var isDragging = false
+
     @AppStorage("FileListView.sortBy")
     private var sortBy: SortBy = .name
-    
+
     @AppStorage("FileListView.viewStyle")
     private var viewStyle: ViewStyle = .list
-    
-    @State var fileInfos = [FileInfo]()
-    
+
+    @State private var fileInfos = [FileInfo]()
+
     @State private var fileIdDict = [UUID: FileInfo]()
-    
+
     @State private var multiSelection = Set<UUID>()
-    
-    @State private var selectedFileUrl: URL? = nil
+
+    @State private var selectedFileUrl: URL?
     
     var body: some View {
-        HSplitView {
+        HStack {
             List(fileInfos, selection: $multiSelection) { file in
                 HStack {
                     ImageView(file: file)
@@ -65,50 +54,88 @@ struct FileListView: View {
                     }
                 }
             }
-            .frame(minWidth: 100)
-            .layoutPriority(1)
+            .frame(minWidth: fileListMinWidth, maxWidth: .infinity, maxHeight: .infinity)
+            .frame(width: fileDetailWidth)
             .onChange(of: multiSelection, perform: { selections in
-                if selections.count == 1, let fileInfo = fileIdDict[selections.first!] {
+                if selections.count >= 1, let fileInfo = fileIdDict[selections.first!] {
                     selectedFileUrl = fileInfo.url
+                } else {
+                    selectedFileUrl = nil
+                    return
                 }
             })
-            
+
+            Divider()
+                .frame(width: 3)
+                .overlay(.ultraThickMaterial)
+                .background(Color.gray.opacity(isDragging ? 0.5 : 0))
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            isDragging = true
+                            updateFileDetailViewWidth(value.translation.width)
+                        }
+                        .onEnded { _ in
+                            isDragging = false
+                        }
+                )
+                .onHover { inside in
+                    if inside {
+                        NSCursor.resizeLeftRight.set()
+                    } else {
+                        NSCursor.arrow.set()
+                    }
+                }
+
             FileDetailView(fileUrl: selectedFileUrl)
-                .frame(minWidth: 100, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: fileDetailMinWidth, maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationTitle(dirPath.lastPathComponent)
-        .onAppear(perform: loadFiles)
+        .navigationTitle(fileDirUrl?.lastPathComponent ?? "")
+        .onChange(of: fileDirUrl, perform: loadFiles)
     }
-    
-    private func loadFiles() {
-        Self.logger.debug("List files of directory \(dirPath.path)")
-        
+
+    private func updateFileDetailViewWidth(_ width: CGFloat) {
+        fileDetailWidth += width
+        if fileDetailWidth < fileDetailMinWidth {
+            fileDetailWidth = fileDetailMinWidth
+        }
+    }
+
+    private func loadFiles(dirUrl: URL?) {
+        fileInfos.removeAll()
+        fileIdDict.removeAll()
+        multiSelection.removeAll()
+        selectedFileUrl = nil
+
+        guard let dirUrl = dirUrl else {
+            return
+        }
+
+        Self.logger.debug("List files of directory \(dirUrl.path)")
+
         var filePaths: [String]
         do {
-            filePaths = try FileSystemManager.Default.filesOfDirectory(atPath: dirPath.path)
+            filePaths = try FileSystemManager.Default.filesOfDirectory(atPath: dirUrl.path)
         } catch let error as NSError {
             Self.logger.error("Cannot list files. \(error)")
             return
         }
-        
+
         Self.logger.debug("Number of files \(filePaths.count)")
-        
-        fileInfos.removeAll()
-        fileIdDict.removeAll()
-        
+
         filePaths.forEach { filePath in
             let fileInfo = FileInfo(url: URL(fileURLWithPath: filePath))
             fileInfos.append(fileInfo)
             fileIdDict[fileInfo.id] = fileInfo
         }
-        
+
         if sortBy == .name {
             fileInfos.sort { lFile, rFile in
                 return lFile.url.path < rFile.url.path
             }
         }
     }
-    
+
     @ViewBuilder private func createItem(file: FileInfo) -> some View {
         switch viewStyle {
         case .icon:
@@ -133,35 +160,58 @@ struct FileListView: View {
             }
         }
     }
-    
+
     private func loadImage(file: FileInfo) {
         let fileUrl = file.url
-        
+
         if !ViewHelper.isImage(fileUrl) {
             return
         }
-        
+
         DispatchQueue.global(qos: .userInitiated).async {
             guard let nsImage = NSImage(contentsOf: fileUrl) else {
                 return
             }
-            
+
             DispatchQueue.main.async {
                 file.image = Image(nsImage: nsImage)
             }
         }
     }
-    
+
     private func switchToIconView() {
-        
+
     }
-    
+
     private func switchToListView() {
-        
+
+    }
+}
+
+enum SortBy: String, CaseIterable, Identifiable {
+    case name = "name"
+    case dateModified = "dateModified"
+    case dateCreated = "dateCreated"
+    case size = "size"
+
+    var id: SortBy {
+        return self
+    }
+}
+
+enum ViewStyle: String, CaseIterable, Identifiable {
+    case icon = "icon"
+    case list = "list"
+
+    var id: ViewStyle {
+        return self
     }
 }
 
 struct ImageView: View {
+    
+    let imageLength: Double = 64
+    
     @ObservedObject var file: FileInfo
     
     var body: some View {
@@ -169,7 +219,7 @@ struct ImageView: View {
             image
                 .resizable()
                 .aspectRatio(contentMode: ContentMode.fit)
-                .frame(width: 64, height: 64)
+                .frame(width: imageLength, height: imageLength)
                 .cornerRadius(5)
         }
     }
@@ -177,6 +227,6 @@ struct ImageView: View {
 
 struct FileListView_Previews: PreviewProvider {
     static var previews: some View {
-        FileListView(dirPath: URL(fileURLWithPath: "."))
+        FileListView(fileDirUrl: URL(fileURLWithPath: "."))
     }
 }

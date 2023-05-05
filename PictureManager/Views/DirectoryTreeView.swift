@@ -17,7 +17,7 @@ struct DirectoryTreeView: View {
     
     @AppStorage("FolderTreeView.folders")
     private var rootDirPaths: [String] = []
-
+    
     @State private var rootDirs = [DirectoryInfo]()
     
     @State private var dirIdDict = [UUID: DirectoryInfo]()
@@ -26,21 +26,19 @@ struct DirectoryTreeView: View {
     
     @State private var flag = false
     
+    @Binding var selectedUrl: URL?
+    
     private let defaultUuid: UUID = UUID()
     
     var body: some View {
         VStack {
             List(rootDirs, children: \.children, selection: $singleSelection) { dir in
-                NavigationLink(destination: FileListView(dirPath: dir.url))
-                {
-                    VStack {
-                        Text(dir.name).font(.headline)
-                        if let errorMessage = dir.errorMessage {
-                            Text(errorMessage).font(.subheadline)
-                        }
+                VStack {
+                    Text(dir.name).font(.headline)
+                    if let errorMessage = dir.errorMessage {
+                        Text(errorMessage).font(.subheadline)
                     }
                 }
-            
             }
             .onChange(of: singleSelection, perform: { value in
                 if let selectedDirId = value {
@@ -50,14 +48,6 @@ struct DirectoryTreeView: View {
                     Self.logger.info("No directory selected")
                 }
             })
-            
-//            Text("\(singleSelection ?? defaultUuid) selections")
-            
-//            TextField("Eneter:", text: $name)
-//                .textFieldStyle(RoundedBorderTextFieldStyle())
-//                .onChange(of: name) { newValue in
-//                    print("Name changed to \(name)")
-//                }
             
             HStack {
                 Button(action: addDir) {
@@ -158,27 +148,54 @@ struct DirectoryTreeView: View {
     }
     
     func loadSubDirs(id: UUID) -> Void {
-        if let selectedDir = dirIdDict[id] {
-            Self.logger.debug("Selected directory: \(selectedDir.url.lastPathComponent)")
-            if selectedDir.children == nil {
-                selectedDir.children = []
+        guard let selectedDir = dirIdDict[id] else {
+            return
+        }
+        
+        self.selectedUrl = selectedDir.url
+        
+        Self.logger.debug("List subdirectories of: \(selectedDir.url.lastPathComponent)")
+        
+        if selectedDir.children == nil {
+            selectedDir.children = []
+            
+            do {
+                var subDirs = try FileSystemManager.Default.directoriesOfDirectory(atPath: selectedDir.url.path)
+                subDirs.sort(by: <)
                 
-                do {
-                    var subDirs = try FileSystemManager.Default.directoriesOfDirectory(atPath: selectedDir.url.path)
-                    subDirs.sort(by: <)
-                    
-                    for subDir in subDirs {
-                        selectedDir.children!.append(createDirInfo(path: subDir))
-                    }
-                    
-                    Self.logger.debug("Appended sub directories of: \(selectedDir.url.lastPathComponent)")
-                    
-                } catch let error as NSError {
-                    Self.logger.error("Cannot list subdirectories. \(error)")
-                    selectedDir.errorMessage = "Cannot load"
+                for subDir in subDirs {
+                    selectedDir.children!.append(createDirInfo(path: subDir))
                 }
                 
-                refreshDirTree()
+            } catch let error as NSError {
+                Self.logger.error("Cannot list subdirectories. \(error)")
+                selectedDir.errorMessage = "Cannot load"
+            }
+            
+            refreshDirTree()
+        }
+    }
+}
+
+struct NodeView: View {
+    var node: DirectoryInfo
+    @Binding var selectedNode: DirectoryInfo?
+    
+    var body: some View {
+        HStack {
+            Text(node.name)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            selectedNode = node
+            do {
+                let subDirs = try FileSystemManager.Default.directoriesOfDirectory(atPath: node.url.path)
+                for subDir in subDirs {
+                    node.children = []
+                    node.children!.append(DirectoryInfo(url: URL(fileURLWithPath: subDir, isDirectory: true)))
+                }
+            } catch let error as NSError {
+                print("Cannot list subdirectories. \(error)")
             }
         }
     }
@@ -186,6 +203,6 @@ struct DirectoryTreeView: View {
 
 struct DirectoryTreeView_Previews: PreviewProvider {
     static var previews: some View {
-        DirectoryTreeView()
+        DirectoryTreeView(selectedUrl: .constant(URL(fileURLWithPath: ".")))
     }
 }

@@ -8,6 +8,11 @@
 import SwiftUI
 
 struct ImageDetailView: View {
+    
+    let imageMinWidth: Double = 32
+    
+    let imageMinHeight: Double = 32
+    
     var fileUrl: URL?
     
     var body: some View {
@@ -15,8 +20,8 @@ struct ImageDetailView: View {
             Image(nsImage: NSImage(byReferencing: fileUrl!))
                 .resizable()
                 .aspectRatio(contentMode: ContentMode.fit)
-                .frame(minWidth: 256, maxWidth: .infinity,
-                       minHeight: 256, maxHeight: .infinity)
+                .frame(minWidth: imageMinWidth, maxWidth: .infinity,
+                       minHeight: imageMinHeight, maxHeight: .infinity)
         }
     }
     
