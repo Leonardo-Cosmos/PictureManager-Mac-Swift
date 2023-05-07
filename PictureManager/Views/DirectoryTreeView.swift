@@ -15,6 +15,8 @@ struct DirectoryTreeView: View {
         category: String(describing: Self.self)
     )
     
+    @Binding var selectedUrl: URL?
+    
     @AppStorage("FolderTreeView.folders")
     private var rootDirPaths: [String] = []
     
@@ -25,8 +27,6 @@ struct DirectoryTreeView: View {
     @State private var singleSelection: UUID?
     
     @State private var flag = false
-    
-    @Binding var selectedUrl: URL?
     
     private let defaultUuid: UUID = UUID()
     
@@ -40,14 +40,7 @@ struct DirectoryTreeView: View {
                     }
                 }
             }
-            .onChange(of: singleSelection, perform: { value in
-                if let selectedDirId = value {
-                    Self.logger.info("Selected directory ID: \(selectedDirId)")
-                    loadSubDirs(id: selectedDirId)
-                } else {
-                    Self.logger.info("No directory selected")
-                }
-            })
+            .onChange(of: singleSelection, perform: loadSubDirs)
             
             HStack {
                 Button(action: addDir) {
@@ -147,8 +140,16 @@ struct DirectoryTreeView: View {
         rootDirs.removeLast()
     }
     
-    func loadSubDirs(id: UUID) -> Void {
-        guard let selectedDir = dirIdDict[id] else {
+    func loadSubDirs(id: UUID?) -> Void {
+        guard let selectedDirId = id else {
+            Self.logger.info("No directory selected")
+            selectedUrl = nil
+            return
+        }
+        
+        guard let selectedDir = dirIdDict[selectedDirId] else {
+            Self.logger.error("Selected directory ID is not found: \(selectedDirId)")
+            selectedUrl = nil
             return
         }
         

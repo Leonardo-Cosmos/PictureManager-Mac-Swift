@@ -13,5 +13,11 @@ struct PictureManagerApp: App {
         WindowGroup {
             ContentView()
         }
+//        .windowToolbarStyle(UnifiedWindowToolbarStyle(showsTitle: false))
+//        .windowStyle(HiddenTitleBarWindowStyle())
+        
+        Settings {
+            SettingsView()
+        }
     }
 }

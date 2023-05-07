@@ -10,6 +10,14 @@ import SwiftUI
 
 struct ViewHelper {
     
+    static func mainScreenWidth(defaultValue: Double) -> Double {
+        if let mainScreenWidth = NSScreen.main?.frame.size.width {
+            return Double(mainScreenWidth)
+        } else {
+            return defaultValue
+        }
+    }
+    
     static func openDirectoryPanel() -> URL? {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
