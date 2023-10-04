@@ -34,27 +34,38 @@ struct DirectoryTreeView: View {
         VStack {
             List(rootDirs, children: \.children, selection: $singleSelection) { dir in
                 VStack {
-                    Text(dir.name).font(.headline)
-                    if let errorMessage = dir.errorMessage {
-                        Text(errorMessage).font(.subheadline)
+                    Text(dir.name)
+                        .font(.headline)
+                        .help(dir.name)
+                    if let error = dir.error {
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle")
+                            Text(error.localizedDescription)
+                                .font(.subheadline)
+                                .foregroundColor(.red)
+                                .help(error.localizedDescription)
+                        }
                     }
+                }
+            }
+            .contextMenu {
+                Button(action: addDir) {
+                    Image(systemName: "plus")
+                    Label("Add Folder", systemImage: "plus")
+                }
+                
+                Button(action: removeDir) {
+                    Image(systemName: "minus")
+                    Label("Remove Folder", systemImage: "minus")
+                }
+                
+                Button(action: refreshDirTree) {
+                    Image(systemName: "arrow.2.circlepath")
+                    Label("Fresh Tree View", systemImage: "arrow.2.circlepath")
                 }
             }
             .onChange(of: singleSelection, perform: loadSubDirs)
             
-            HStack {
-                Button(action: addDir) {
-                    Label("Add Folder", systemImage: "plus")
-                }.help(Text("Add Folder"))
-                
-                Button(action: removeDir) {
-                    Label("Remove Folder", systemImage: "minus")
-                }.help(Text("Remove Folder"))
-                
-                Button(action: refreshDirTree) {
-                    Label("Fresh Tree View", systemImage: "arrow.2.circlepath")
-                }
-            }.labelStyle(.iconOnly)
         }.onAppear(perform: loadRootDirPaths)
     }
     
@@ -170,7 +181,7 @@ struct DirectoryTreeView: View {
                 
             } catch let error as NSError {
                 Self.logger.error("Cannot list subdirectories. \(error)")
-                selectedDir.errorMessage = "Cannot load"
+                selectedDir.error = error
             }
             
             refreshDirTree()

@@ -19,7 +19,7 @@ class DirectoryInfo: Identifiable, Hashable, Equatable, ObservableObject {
     
     var children: [DirectoryInfo]?
     
-    var errorMessage: String?
+    var error: Error?
     
     init(url: URL, children: [DirectoryInfo]? = nil) {
         self.url = url
