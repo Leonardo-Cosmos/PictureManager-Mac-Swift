@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1320"
+   LastUpgradeVersion = "1430"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "A70C4E27288FF477000B60FB"
+               BlueprintIdentifier = "A70C4E85288FFE75000B60FB"
                BuildableName = "PictureManager.app"
                BlueprintName = "PictureManager"
                ReferencedContainer = "container:PictureManager.xcodeproj">
@@ -32,7 +32,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "A70C4E38288FF47A000B60FB"
+               BlueprintIdentifier = "A70C4E96288FFE77000B60FB"
                BuildableName = "PictureManagerTests.xctest"
                BlueprintName = "PictureManagerTests"
                ReferencedContainer = "container:PictureManager.xcodeproj">
@@ -42,7 +42,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "A70C4E42288FF47A000B60FB"
+               BlueprintIdentifier = "A70C4EA0288FFE77000B60FB"
                BuildableName = "PictureManagerUITests.xctest"
                BlueprintName = "PictureManagerUITests"
                ReferencedContainer = "container:PictureManager.xcodeproj">
@@ -64,7 +64,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "A70C4E27288FF477000B60FB"
+            BlueprintIdentifier = "A70C4E85288FFE75000B60FB"
             BuildableName = "PictureManager.app"
             BlueprintName = "PictureManager"
             ReferencedContainer = "container:PictureManager.xcodeproj">
@@ -81,7 +81,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "A70C4E27288FF477000B60FB"
+            BlueprintIdentifier = "A70C4E85288FFE75000B60FB"
             BuildableName = "PictureManager.app"
             BlueprintName = "PictureManager"
             ReferencedContainer = "container:PictureManager.xcodeproj">
