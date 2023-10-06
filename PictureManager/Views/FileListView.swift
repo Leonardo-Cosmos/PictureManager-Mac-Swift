@@ -47,6 +47,45 @@ struct FileListView: View {
                     }
                 }
             }
+            .onCutCommand() { () in
+                return selectedUrls.map({ url in
+//                    let provider = NSItemProvider()
+//                    provider.registerFileRepresentation(forTypeIdentifier: "public.file-url", fileOptions: .openInPlace, visibility: .all, loadHandler: { (completionHander) -> Progress? in
+//                        completionHander(url, true, nil)
+//                        return nil
+//                    })
+//                    return provider
+                    NSItemProvider(contentsOf: url)!
+                })
+            }
+            .onCopyCommand() {
+                return selectedUrls.map({ url in
+                    NSItemProvider(object: url.path as NSString)
+                })
+            }
+            .onPasteCommand(of: [.fileURL], validator: { providers in
+                guard rootDirUrl != nil else {
+                    return nil
+                }
+                let validProviders = providers.filter({ provider in
+                    provider.hasRepresentationConforming(toTypeIdentifier: "public.file-url")
+                })
+                return validProviders
+            }, perform: { (providers: [NSItemProvider]) in
+                for provider in providers {
+                    provider.loadInPlaceFileRepresentation(forTypeIdentifier: "public.file-url") { (url, isInPlace, error) in
+                        guard isInPlace else {
+                            return
+                        }
+                        // logger.debug("Pasting file is loaded in place: \(isInPlace)")
+                        if let error = error {
+                            FileListView.logger.error("Error in pasting file: \(error)")
+                        } else if let url = url {
+                            FileSystemManager.default.copyFile(fromPath: url.path, toPath: rootDirUrl!.path)
+                        }
+                    }
+                }
+            })
             .onChange(of: multiSelection, perform: updateMultiSelection)
         }
         .navigationTitle(rootDirUrl?.lastPathComponent ?? "")
@@ -67,7 +106,7 @@ struct FileListView: View {
 
         var filePaths: [String]
         do {
-            filePaths = try FileSystemManager.Default.filesOfDirectory(atPath: dirUrl.path)
+            filePaths = try FileSystemManager.default.filesOfDirectory(atPath: dirUrl.path)
         } catch let error as NSError {
             Self.logger.error("Cannot list files. \(error)")
             return
@@ -94,6 +133,8 @@ struct FileListView: View {
             .filter { $0 != nil }
         selectedUrls = selectedFileSet.map({ $0!.url })
     }
+    
+    
 
     @ViewBuilder private func createItem(file: FileInfo) -> some View {
         switch viewStyle {

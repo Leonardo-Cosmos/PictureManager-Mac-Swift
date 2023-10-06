@@ -75,22 +75,8 @@ struct FileSystemManager {
         }
     }
     
-    func renameFile(atPath dirPath: String, from srcFileName: String, to dstFileName: String) {
+    func moveFile(fromPath srcPath: String, toPath dstPath: String) {
         
-        let srcPath = "\(dirPath)/\(srcFileName)"
-        let dstPath = "\(dirPath)/\(dstFileName)"
-        Self.logger.debug("Rename \(srcFileName) to \(dstFileName)")
-        do {
-            try fileManager.moveItem(atPath: srcPath, toPath: dstPath)
-        } catch let error as NSError {
-            Self.logger.error("Cannot rename file: \(error)")
-        }
-    }
-    
-    func moveFile(_ fileName: String, from srcDirPath: String, to dstDirPath: String) {
-        
-        let srcPath = "\(srcDirPath)/\(fileName)"
-        let dstPath = "\(dstDirPath)/\(fileName)"
         Self.logger.debug("Move \(srcPath) to \(dstPath)")
         do {
             try fileManager.moveItem(atPath: srcPath, toPath: dstPath)
@@ -99,16 +85,36 @@ struct FileSystemManager {
         }
     }
     
-    func copyFile(_ fileName: String, from srcDirPath: String, to dstDirPath: String) {
+    func moveFile(_ fileName: String, from srcDirPath: String, to dstDirPath: String) {
         
         let srcPath = "\(srcDirPath)/\(fileName)"
         let dstPath = "\(dstDirPath)/\(fileName)"
+        moveFile(fromPath: srcPath, toPath: dstPath)
+    }
+    
+    func renameFile(atPath dirPath: String, from srcFileName: String, to dstFileName: String) {
+        
+        let srcPath = "\(dirPath)/\(srcFileName)"
+        let dstPath = "\(dirPath)/\(dstFileName)"
+        Self.logger.debug("Rename \(srcFileName) to \(dstFileName)")
+        moveFile(fromPath: srcPath, toPath: dstPath)
+    }
+    
+    func copyFile(fromPath srcPath: String, toPath dstPath: String) {
+        
         Self.logger.debug("Copy \(srcPath) to \(dstPath)")
         do {
             try fileManager.copyItem(atPath: srcPath, toPath: dstPath)
         } catch let error as NSError {
             Self.logger.error("Cannot copy file: \(error)")
         }
+    }
+    
+    func copyFile(_ fileName: String, from srcDirPath: String, to dstDirPath: String) {
+        
+        let srcPath = "\(srcDirPath)/\(fileName)"
+        let dstPath = "\(dstDirPath)/\(fileName)"
+        copyFile(fromPath: srcPath, toPath: dstPath)
     }
     
     func attributes(_ filePath: String) throws -> [FileAttributeKey: Any] {
@@ -139,7 +145,7 @@ struct FileSystemManager {
     
     static let defaultInstance = FileSystemManager()
     
-    static var Default: FileSystemManager {
+    static var `default`: FileSystemManager {
         defaultInstance
     }
 }
