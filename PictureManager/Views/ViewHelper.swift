@@ -31,14 +31,16 @@ struct ViewHelper {
     }
     
     static func isImage(_ url: URL?) -> Bool {
-        if url == nil {
+        guard let url = url else {
             return false
         }
         
-        let pastedboard = NSPasteboard.general
-        pastedboard.clearContents()
-        pastedboard.writeObjects([NSURL(fileURLWithPath: url!.path)])
+        return url.pathExtension == ".jpg"
         
-        return NSImage.canInit(with: pastedboard)
+//        let pastedboard = NSPasteboard.general
+//        pastedboard.clearContents()
+//        pastedboard.writeObjects([NSURL(fileURLWithPath: url!.path)])
+//
+//        return NSImage.canInit(with: pastedboard)
     }
 }

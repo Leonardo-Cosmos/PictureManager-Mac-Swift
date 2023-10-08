@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 import os
 
 struct FileListView: View {
@@ -48,40 +49,47 @@ struct FileListView: View {
                 }
             }
             .onCutCommand() { () in
-                return selectedUrls.map({ url in
-//                    let provider = NSItemProvider()
-//                    provider.registerFileRepresentation(forTypeIdentifier: "public.file-url", fileOptions: .openInPlace, visibility: .all, loadHandler: { (completionHander) -> Progress? in
-//                        completionHander(url, true, nil)
-//                        return nil
-//                    })
-//                    return provider
-                    NSItemProvider(contentsOf: url)!
+                let providers = selectedUrls.map({ url in
+                    NSItemProvider(item: url.path as NSString, typeIdentifier: UTType.fileListPath.identifier)
                 })
+                FileListView.logger.debug("Cut provider count: \(providers.count)")
+                return providers
             }
             .onCopyCommand() {
-                return selectedUrls.map({ url in
-                    NSItemProvider(object: url.path as NSString)
+                let providers = selectedUrls.map({ url in
+                    NSItemProvider(item: url.path as NSString, typeIdentifier: UTType.fileListPath.identifier)
                 })
+                FileListView.logger.debug("Copied provider count: \(providers.count)")
+                return providers
             }
-            .onPasteCommand(of: [.fileURL], validator: { providers in
+            .onPasteCommand(of: [UTType.fileListPath.identifier], validator: { providers in
                 guard rootDirUrl != nil else {
                     return nil
                 }
+                
                 let validProviders = providers.filter({ provider in
-                    provider.hasRepresentationConforming(toTypeIdentifier: "public.file-url")
+                    FileListView.logger.debug("provider identifers: \(provider.registeredTypeIdentifiers)")
+                    return provider.hasItemConformingToTypeIdentifier(UTType.fileListPath.identifier)
                 })
-                return validProviders
+
+                FileListView.logger.debug("Valid provider count: \(validProviders.count)")
+                if validProviders.count > 0 {
+                    return validProviders
+                } else {
+                    return nil
+                }
             }, perform: { (providers: [NSItemProvider]) in
                 for provider in providers {
-                    provider.loadInPlaceFileRepresentation(forTypeIdentifier: "public.file-url") { (url, isInPlace, error) in
-                        guard isInPlace else {
-                            return
-                        }
-                        // logger.debug("Pasting file is loaded in place: \(isInPlace)")
+                    provider.loadItem(forTypeIdentifier: UTType.fileListPath.identifier) { (item, error) in
                         if let error = error {
                             FileListView.logger.error("Error in pasting file: \(error)")
-                        } else if let url = url {
-                            FileSystemManager.default.copyFile(fromPath: url.path, toPath: rootDirUrl!.path)
+                        } else if let data = item as? Data {
+                            do {
+                                let dataDecoded = try NSKeyedUnarchiver.unarchivedObject(ofClass: NSString.self, from: data)
+                                FileListView.logger.debug("Path: \(dataDecoded!)")
+                            } catch let err as NSError {
+                                FileListView.logger.error("\(err.localizedDescription)")
+                            }
                         }
                     }
                 }
