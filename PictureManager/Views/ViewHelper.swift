@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ViewHelper {
     
@@ -30,12 +31,14 @@ struct ViewHelper {
         }
     }
     
+    static let imagePathExtensions = ["jpg", "jpeg", "png"]
+    
     static func isImage(_ url: URL?) -> Bool {
         guard let url = url else {
             return false
         }
         
-        return url.pathExtension == ".jpg"
+        return imagePathExtensions.contains(where: { $0 == url.pathExtension })
         
 //        let pastedboard = NSPasteboard.general
 //        pastedboard.clearContents()
@@ -43,4 +46,39 @@ struct ViewHelper {
 //
 //        return NSImage.canInit(with: pastedboard)
     }
+    
+    static func urlToNSItemProvider(_ url: URL) -> NSItemProvider {
+        NSItemProvider(item: url.path as NSString, typeIdentifier: UTType.fileListPath.identifier)
+    }
+    
+    static func urlFromNSItemProvider(_ provider: NSItemProvider, completionHandler: @escaping (URL?, Error?) -> Void) {
+        
+        provider.loadItem(forTypeIdentifier: UTType.fileListPath.identifier) { (item, error) in
+            if let error = error {
+                completionHandler(nil, error)
+            }
+            
+            do {
+                guard let data = item as? Data else {
+                    throw LoadUrlError.notDataError
+                }
+                
+                guard let dataDecoded = try NSKeyedUnarchiver.unarchivedObject(ofClass: NSString.self, from: data) else {
+                    throw LoadUrlError.decryptDataError
+                }
+                
+                guard let path = dataDecoded as String? else {
+                    throw LoadUrlError.notStringError
+                }
+                
+                let fileUrl = URL(fileURLWithPath: path)
+                
+                completionHandler(fileUrl, nil)
+                
+            } catch let err as NSError {
+                completionHandler(nil, err)
+            }
+        }
+    }
 }
+
