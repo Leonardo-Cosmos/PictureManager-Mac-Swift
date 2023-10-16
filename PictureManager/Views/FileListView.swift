@@ -69,7 +69,12 @@ struct FileListView: View {
                         if let error = error {
                             FileListView.logger.error("Cannot load pasted path, \(error.localizedDescription)")
                         } else  if let fileUrl = fileUrl {
-                            FileSystemManager.default.copyFile(fileUrl.lastPathComponent, from: fileUrl.deletingLastPathComponent().path, to: rootDirUrl!.path)
+                            do {
+                                try FileSystemManager.default.copyFile(fileUrl.lastPathComponent, from: fileUrl.deletingLastPathComponent().path, to: rootDirUrl!.path)
+                                fileInfos.append(FileInfo(url: fileUrl))
+                            } catch let error {
+                                FileListView.logger.error("Cannot paste file, \(error.localizedDescription)")
+                            }
                         }
                     }
                 }

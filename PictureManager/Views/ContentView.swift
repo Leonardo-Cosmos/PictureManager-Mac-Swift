@@ -100,7 +100,7 @@ struct ContentView: View {
                 guard let url = dirUrl else {
                     return
                 }
-                Self.logger.debug("Selected \(url.lastPathComponent)")
+                Self.logger.debug("Selected folder: \(url.lastPathComponent)")
             }
             .listStyle(.sidebar)
     }

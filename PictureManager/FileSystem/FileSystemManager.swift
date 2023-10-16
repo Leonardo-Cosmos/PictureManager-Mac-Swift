@@ -75,46 +75,33 @@ struct FileSystemManager {
         }
     }
     
-    func moveFile(fromPath srcPath: String, toPath dstPath: String) {
-        
+    func moveFile(fromPath srcPath: String, toPath dstPath: String) throws {
         Self.logger.debug("Move \(srcPath) to \(dstPath)")
-        do {
-            try fileManager.moveItem(atPath: srcPath, toPath: dstPath)
-        } catch let error as NSError {
-            Self.logger.error("Cannot move file: \(error)")
-        }
+        try fileManager.moveItem(atPath: srcPath, toPath: dstPath)
     }
     
-    func moveFile(_ fileName: String, from srcDirPath: String, to dstDirPath: String) {
-        
+    func moveFile(_ fileName: String, from srcDirPath: String, to dstDirPath: String) throws {
         let srcPath = "\(srcDirPath)/\(fileName)"
         let dstPath = "\(dstDirPath)/\(fileName)"
-        moveFile(fromPath: srcPath, toPath: dstPath)
+        try moveFile(fromPath: srcPath, toPath: dstPath)
     }
     
-    func renameFile(atPath dirPath: String, from srcFileName: String, to dstFileName: String) {
-        
+    func renameFile(atPath dirPath: String, from srcFileName: String, to dstFileName: String) throws {
         let srcPath = "\(dirPath)/\(srcFileName)"
         let dstPath = "\(dirPath)/\(dstFileName)"
         Self.logger.debug("Rename \(srcFileName) to \(dstFileName)")
-        moveFile(fromPath: srcPath, toPath: dstPath)
+        try moveFile(fromPath: srcPath, toPath: dstPath)
     }
     
-    func copyFile(fromPath srcPath: String, toPath dstPath: String) {
-        
+    func copyFile(fromPath srcPath: String, toPath dstPath: String) throws {
         Self.logger.debug("Copy \(srcPath) to \(dstPath)")
-        do {
-            try fileManager.copyItem(atPath: srcPath, toPath: dstPath)
-        } catch let error as NSError {
-            Self.logger.error("Cannot copy file: \(error)")
-        }
+        try fileManager.copyItem(atPath: srcPath, toPath: dstPath)
     }
     
-    func copyFile(_ fileName: String, from srcDirPath: String, to dstDirPath: String) {
-        
+    func copyFile(_ fileName: String, from srcDirPath: String, to dstDirPath: String) throws {
         let srcPath = "\(srcDirPath)/\(fileName)"
         let dstPath = "\(dstDirPath)/\(fileName)"
-        copyFile(fromPath: srcPath, toPath: dstPath)
+        try copyFile(fromPath: srcPath, toPath: dstPath)
     }
     
     func attributes(_ filePath: String) throws -> [FileAttributeKey: Any] {
