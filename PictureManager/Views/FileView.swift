@@ -57,7 +57,7 @@ struct FileListView: View {
                         } else  if let fileUrl = fileUrl {
                             do {
                                 try FileSystemManager.default.copyFile(fileUrl.lastPathComponent, from: fileUrl.deletingLastPathComponent().path, to: rootDirUrl!.path)
-                                fileInfos.append(FileInfo(url: fileUrl))
+                                addFile(filePath: fileUrl.path)
                             } catch let error {
                                 FileListView.logger.error("Cannot paste file, \(error.localizedDescription)")
                             }
@@ -91,17 +91,19 @@ struct FileListView: View {
 
         Self.logger.debug("Number of files \(filePaths.count)")
 
-        filePaths.forEach { filePath in
-            let fileInfo = FileInfo(url: URL(fileURLWithPath: filePath))
-            fileInfos.append(fileInfo)
-            fileIdDict[fileInfo.id] = fileInfo
-        }
+        filePaths.forEach(addFile)
 
         if sortBy == .name {
             fileInfos.sort { lFile, rFile in
                 return lFile.url.path < rFile.url.path
             }
         }
+    }
+    
+    private func addFile(filePath: String) {
+        let fileInfo = FileInfo(url: URL(fileURLWithPath: filePath))
+        fileInfos.append(fileInfo)
+        fileIdDict[fileInfo.id] = fileInfo
     }
     
     private func updateMultiSelection(ids: Set<UUID>) -> Void {
