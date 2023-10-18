@@ -15,7 +15,7 @@
 		A70C4EA8288FFE77000B60FB /* PictureManagerUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70C4EA7288FFE77000B60FB /* PictureManagerUITestsLaunchTests.swift */; };
 		A70C4EBB28900003000B60FB /* DirectoryTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70C4EB728900002000B60FB /* DirectoryTreeView.swift */; };
 		A70C4EBC28900003000B60FB /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70C4EB828900002000B60FB /* MainView.swift */; };
-		A70C4EBD28900003000B60FB /* FileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70C4EB928900002000B60FB /* FileListView.swift */; };
+		A70C4EBD28900003000B60FB /* FileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70C4EB928900002000B60FB /* FileView.swift */; };
 		A70C4EBE28900003000B60FB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70C4EBA28900002000B60FB /* ContentView.swift */; };
 		A70C4EC2289001F4000B60FB /* FileInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70C4EBF289001F4000B60FB /* FileInfo.swift */; };
 		A70C4EC3289001F4000B60FB /* DirectoryInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70C4EC0289001F4000B60FB /* DirectoryInfo.swift */; };
@@ -60,7 +60,7 @@
 		A70C4EA7288FFE77000B60FB /* PictureManagerUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureManagerUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		A70C4EB728900002000B60FB /* DirectoryTreeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DirectoryTreeView.swift; sourceTree = "<group>"; };
 		A70C4EB828900002000B60FB /* MainView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
-		A70C4EB928900002000B60FB /* FileListView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileListView.swift; sourceTree = "<group>"; };
+		A70C4EB928900002000B60FB /* FileView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileView.swift; sourceTree = "<group>"; };
 		A70C4EBA28900002000B60FB /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A70C4EBF289001F4000B60FB /* FileInfo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileInfo.swift; sourceTree = "<group>"; };
 		A70C4EC0289001F4000B60FB /* DirectoryInfo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DirectoryInfo.swift; sourceTree = "<group>"; };
@@ -179,7 +179,7 @@
 			children = (
 				A70C4EBA28900002000B60FB /* ContentView.swift */,
 				A70C4EB728900002000B60FB /* DirectoryTreeView.swift */,
-				A70C4EB928900002000B60FB /* FileListView.swift */,
+				A70C4EB928900002000B60FB /* FileView.swift */,
 				A70C4EB828900002000B60FB /* MainView.swift */,
 				A72C47E928A79D1300100C9E /* ImageDetailView.swift */,
 				A77AF8BE28AB7F78002391D5 /* FileDetailView.swift */,
@@ -337,7 +337,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A754B0122A07657C00D44872 /* SettingsView.swift in Sources */,
-				A70C4EBD28900003000B60FB /* FileListView.swift in Sources */,
+				A70C4EBD28900003000B60FB /* FileView.swift in Sources */,
 				A77AF8BF28AB7F78002391D5 /* FileDetailView.swift in Sources */,
 				A70C4EBE28900003000B60FB /* ContentView.swift in Sources */,
 				A70C4EC6289001FE000B60FB /* FileSystemManager.swift in Sources */,
