@@ -6,8 +6,8 @@
 //
 
 import SwiftUI
-import os
 import UniformTypeIdentifiers
+import os
 
 struct FileListView: View {
     
@@ -30,24 +30,10 @@ struct FileListView: View {
 
     @State private var fileIdDict = [UUID: FileInfo]()
 
-    @State private var multiSelection = Set<UUID>()
-
-    @State private var selectedFileUrl: URL?
+    @State private var selectionSet = Set<UUID>()
     
     var body: some View {
-        HStack {
-            List(fileInfos, selection: $multiSelection) { file in
-                HStack {
-                    ImageView(file: file)
-                    Text(file.name)
-                }
-                .onAppear {
-                    if !file.loaded {
-                        loadImage(file: file)
-                        file.loaded = true
-                    }
-                }
-            }
+        FileTreeView(fileInfos: $fileInfos, selectionSet: $selectionSet, loadImage: loadImage)
             .onCutCommand() { () in
                 let providers = selectedUrls.map(ViewHelper.urlToNSItemProvider)
                 FileListView.logger.debug("Cut file count: \(providers.count)")
@@ -79,17 +65,15 @@ struct FileListView: View {
                     }
                 }
             })
-            .onChange(of: multiSelection, perform: updateMultiSelection)
-        }
-        .navigationTitle(rootDirUrl?.lastPathComponent ?? "")
-        .onChange(of: rootDirUrl, perform: loadFiles)
+            .onChange(of: selectionSet, perform: updateMultiSelection)
+            .navigationTitle(rootDirUrl?.lastPathComponent ?? "")
+            .onChange(of: rootDirUrl, perform: loadFiles)
     }
 
     private func loadFiles(dirUrl: URL?) {
         fileInfos.removeAll()
         fileIdDict.removeAll()
-        multiSelection.removeAll()
-        selectedFileUrl = nil
+        selectionSet.removeAll()
 
         guard let dirUrl = dirUrl else {
             return
@@ -168,14 +152,6 @@ struct FileListView: View {
                 file.image = Image(nsImage: nsImage)
             }
         }
-    }
-
-    private func switchToIconView() {
-
-    }
-
-    private func switchToListView() {
-
     }
 }
 
