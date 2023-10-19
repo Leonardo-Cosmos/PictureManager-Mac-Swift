@@ -1,5 +1,5 @@
 //
-//  FileListView.swift
+//  FileView.swift
 //  PictureManager
 //
 //  Created on 2021/10/17.
@@ -16,9 +16,19 @@ struct FileListView: View {
         category: String(describing: Self.self)
     )
     
+    /**
+     Root directory is the one selected in directory tree view and is the root in those file views displaying directory hierarchy.
+     */
     var rootDirUrl: URL?
     
     @Binding var selectedUrls: [URL]
+    
+    @Binding var searchText: String
+    
+    @Binding var searchScope: SearchFileScope
+    
+    @AppStorage("FileView.searchMethod")
+    private var searchMethod: SearchFileMethod = .substring
 
     @AppStorage("FileListView.sortBy")
     private var sortBy: SortBy = .name
@@ -30,50 +40,75 @@ struct FileListView: View {
 
     @State private var fileIdDict = [UUID: FileInfo]()
 
-    @State private var selectionSet = Set<UUID>()
+    @State private var selectedIdSet = Set<UUID>()
+    
+    @Environment(\.isSearching)
+    private var isSearching
+    
+    @State private var searchedFiles = [FileInfo]()
+    
+    @State private var searchedFileIdDict = [UUID: FileInfo]()
+    
+    @State private var searchedSelectedIdSet = Set<UUID>()
     
     var body: some View {
-        FileTreeView(fileInfos: $fileInfos, selectionSet: $selectionSet, loadImage: loadImage)
-            .onCutCommand() { () in
-                let providers = selectedUrls.map(ViewHelper.urlToNSItemProvider)
-                FileListView.logger.debug("Cut file count: \(providers.count)")
-                return providers
-            }
-            .onCopyCommand() {
-                let providers = selectedUrls.map(ViewHelper.urlToNSItemProvider)
-                FileListView.logger.debug("Copied file count: \(providers.count)")
-                return providers
-            }
-            .onPasteCommand(of: [UTType.fileListPath.identifier], validator: { providers in
-                guard rootDirUrl != nil else {
-                    return nil
+        if isSearching {
+            FileTreeView(fileInfos: $searchedFiles, selectionSet: $searchedSelectedIdSet, loadImage: loadImage)
+                .navigationTitle("Searching \(rootDirUrl?.lastPathComponent ?? "")")
+                .onChange(of: searchedSelectedIdSet) { idSet in
+                    updateSelectedFileUrls(idSet)
                 }
-                return providers
-            }, perform: { (providers: [NSItemProvider]) in
-                for provider in providers {
-                    ViewHelper.urlFromNSItemProvider(provider) { (fileUrl, error) in
-                        if let error = error {
-                            FileListView.logger.error("Cannot load pasted path, \(error.localizedDescription)")
-                        } else  if let fileUrl = fileUrl {
-                            do {
-                                try FileSystemManager.default.copyFile(fileUrl.lastPathComponent, from: fileUrl.deletingLastPathComponent().path, to: rootDirUrl!.path)
-                                addFile(filePath: fileUrl.path)
-                            } catch let error {
-                                FileListView.logger.error("Cannot paste file, \(error.localizedDescription)")
+                .onChange(of: searchText) { searchText in
+                    Self.logger.info("Search: \(searchText)")
+                }
+                .onChange(of: searchScope) { searchScope in
+                    
+                }
+        } else {
+            FileTreeView(fileInfos: $fileInfos, selectionSet: $selectedIdSet, loadImage: loadImage)
+                .navigationTitle(rootDirUrl?.lastPathComponent ?? "")
+                .onChange(of: rootDirUrl, perform: loadFiles)
+                .onChange(of: selectedIdSet) { idSet in
+                    updateSelectedFileUrls(idSet)
+                }
+                .onCutCommand() { () in
+                    let providers = selectedUrls.map(ViewHelper.urlToNSItemProvider)
+                    Self.logger.debug("Cut file count: \(providers.count)")
+                    return providers
+                }
+                .onCopyCommand() {
+                    let providers = selectedUrls.map(ViewHelper.urlToNSItemProvider)
+                    Self.logger.debug("Copied file count: \(providers.count)")
+                    return providers
+                }
+                .onPasteCommand(of: [UTType.fileListPath.identifier], validator: { providers in
+                    guard rootDirUrl != nil else {
+                        return nil
+                    }
+                    return providers
+                }, perform: { (providers: [NSItemProvider]) in
+                    for provider in providers {
+                        ViewHelper.urlFromNSItemProvider(provider) { (fileUrl, error) in
+                            if let error = error {
+                                Self.logger.error("Cannot load pasted path, \(error.localizedDescription)")
+                            } else  if let fileUrl = fileUrl {
+                                do {
+                                    try FileSystemManager.default.copyFile(fileUrl.lastPathComponent, from: fileUrl.deletingLastPathComponent().path, to: rootDirUrl!.path)
+                                    addFile(filePath: fileUrl.path)
+                                } catch let error {
+                                    Self.logger.error("Cannot paste file, \(error.localizedDescription)")
+                                }
                             }
                         }
                     }
-                }
-            })
-            .onChange(of: selectionSet, perform: updateMultiSelection)
-            .navigationTitle(rootDirUrl?.lastPathComponent ?? "")
-            .onChange(of: rootDirUrl, perform: loadFiles)
+                })
+        }
     }
 
     private func loadFiles(dirUrl: URL?) {
         fileInfos.removeAll()
         fileIdDict.removeAll()
-        selectionSet.removeAll()
+        selectedIdSet.removeAll()
 
         guard let dirUrl = dirUrl else {
             return
@@ -106,8 +141,8 @@ struct FileListView: View {
         fileIdDict[fileInfo.id] = fileInfo
     }
     
-    private func updateMultiSelection(ids: Set<UUID>) -> Void {
-        let selectedFileSet = ids
+    private func updateSelectedFileUrls(_ idSet: Set<UUID>) -> Void {
+        let selectedFileSet = idSet
             .map { fileIdDict[$0] }
             .filter { $0 != nil }
         selectedUrls = selectedFileSet.map({ $0!.url })
@@ -157,26 +192,6 @@ struct FileListView: View {
     }
 }
 
-enum SortBy: String, CaseIterable, Identifiable {
-    case name = "name"
-    case dateModified = "dateModified"
-    case dateCreated = "dateCreated"
-    case size = "size"
-
-    var id: SortBy {
-        return self
-    }
-}
-
-enum ViewStyle: String, CaseIterable, Identifiable {
-    case icon = "icon"
-    case list = "list"
-
-    var id: ViewStyle {
-        return self
-    }
-}
-
 struct ImageView: View {
     
     let imageLength: Double = 64
@@ -196,6 +211,6 @@ struct ImageView: View {
 
 struct FileListView_Previews: PreviewProvider {
     static var previews: some View {
-        FileListView(rootDirUrl: URL(fileURLWithPath: "."), selectedUrls: .constant([URL]()))
+        FileListView(rootDirUrl: URL(fileURLWithPath: "."), selectedUrls: .constant([URL]()), searchText: .constant(""), searchScope: .constant(.currentDir))
     }
 }

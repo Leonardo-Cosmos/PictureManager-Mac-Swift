@@ -47,6 +47,12 @@ struct ContentView: View {
     
     @State private var selectedFileUrl: URL?
     
+    @State private var searchText: String = ""
+    
+    @State private var submittedSearchText: String = ""
+    
+    @State private var searchScope: SearchFileScope = .currentDir
+    
     var body: some View {
         HStack(spacing: 0) {
             if (!dirTreeOnRight) {
@@ -59,7 +65,21 @@ struct ContentView: View {
                 createFileDetailDivider()
             }
             
-            createFileListView()
+            if #available(macOS 13.0, *) {
+                createFileView()
+                    .searchable(text: $searchText)
+                    .searchScopes($searchScope) {
+                        Text("Current Folder Only").tag(SearchFileScope.currentDir)
+                        Text("Current Folder Recursively").tag(SearchFileScope.currentDirRecursively)
+                        Text("Root Folder Recursively").tag(SearchFileScope.rootDirRecursively)
+                    }
+                    .onSubmit(of: .search) {
+                        submittedSearchText = searchText
+                    }
+            } else {
+                createFileView()
+                    .searchable(text: $searchText)
+            }
             
             if (!fileDetailOnLeft) {
                 createFileDetailDivider()
@@ -144,8 +164,8 @@ struct ContentView: View {
         }
     }
     
-    @ViewBuilder private func createFileListView() -> some View {
-        FileListView(rootDirUrl: selectedDirectoryUrl, selectedUrls: $selectedFileUrls)
+    @ViewBuilder private func createFileView() -> some View {
+        FileListView(rootDirUrl: selectedDirectoryUrl, selectedUrls: $selectedFileUrls, searchText: $submittedSearchText, searchScope: $searchScope)
             .frame(minWidth: fileListMinWidth, maxWidth: .infinity, maxHeight: .infinity)
             .onChange(of: selectedFileUrls, perform: { selections in
                 selectedFileUrl = selections.first
