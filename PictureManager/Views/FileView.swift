@@ -53,7 +53,7 @@ struct FileListView: View {
     
     var body: some View {
         if isSearching {
-            FileTreeView(fileInfos: $searchedFiles, selectionSet: $searchedSelectedIdSet, loadImage: loadImage)
+            FileTreeView(fileInfos: $searchedFiles, selectionSet: $searchedSelectedIdSet)
                 .navigationTitle("Searching \(rootDirUrl?.lastPathComponent ?? "")")
                 .onChange(of: searchedSelectedIdSet) { idSet in
                     updateSelectedFileUrls(idSet)
@@ -65,7 +65,7 @@ struct FileListView: View {
                     
                 }
         } else {
-            FileTreeView(fileInfos: $fileInfos, selectionSet: $selectedIdSet, loadImage: loadImage)
+            FileTreeView(fileInfos: $fileInfos, selectionSet: $selectedIdSet)
                 .navigationTitle(rootDirUrl?.lastPathComponent ?? "")
                 .onChange(of: rootDirUrl, perform: loadFiles)
                 .onChange(of: selectedIdSet) { idSet in
@@ -93,8 +93,8 @@ struct FileListView: View {
                                 Self.logger.error("Cannot load pasted path, \(error.localizedDescription)")
                             } else  if let fileUrl = fileUrl {
                                 do {
-                                    try FileSystemManager.default.copyFile(fileUrl.lastPathComponent, from: fileUrl.deletingLastPathComponent().path, to: rootDirUrl!.path)
-                                    addFile(filePath: fileUrl.path)
+                                    try FileSystemManager.default.copyFile(fileUrl.lastPathComponent, from: fileUrl.deletingLastPathComponent().purePath, to: rootDirUrl!.purePath)
+                                    addFile(filePath: fileUrl.purePath)
                                 } catch let error {
                                     Self.logger.error("Cannot paste file, \(error.localizedDescription)")
                                 }
@@ -114,11 +114,11 @@ struct FileListView: View {
             return
         }
 
-        Self.logger.debug("List files of directory \(dirUrl.path)")
+        Self.logger.debug("List files of directory \(dirUrl.purePath)")
 
         var filePaths: [String]
         do {
-            filePaths = try FileSystemManager.default.filesOfDirectory(atPath: dirUrl.path)
+            filePaths = try FileSystemManager.default.itemsOfDirectory(atPath: dirUrl.purePath)
         } catch let error as NSError {
             Self.logger.error("Cannot list files. \(error)")
             return
@@ -130,15 +130,35 @@ struct FileListView: View {
 
         if sortBy == .name {
             fileInfos.sort { lFile, rFile in
-                return lFile.url.path < rFile.url.path
+                return lFile.url.purePath < rFile.url.purePath
             }
         }
     }
     
     private func addFile(filePath: String) {
-        let fileInfo = FileInfo(url: URL(fileURLWithPath: filePath))
-        fileInfos.append(fileInfo)
-        fileIdDict[fileInfo.id] = fileInfo
+        guard let isDirectory = FileSystemManager.default.isDirectory(atPath: filePath) else {
+            return
+        }
+        
+        var fileUrl: URL
+        if isDirectory {
+            fileUrl = URL(dirPathString: filePath)
+        } else {
+            fileUrl = URL(fileNotDirPathString: filePath)
+        }
+        
+        var file: FileInfo
+        
+        if isDirectory {
+            file = DirectoryInfo(url: fileUrl)
+        } else if ViewHelper.isImage(url: fileUrl) {
+            file = ImageFileInfo(url: fileUrl)
+        } else {
+            file = FileInfo(url: fileUrl)
+        }
+        
+        fileInfos.append(file)
+        fileIdDict[file.id] = file
     }
     
     private func updateSelectedFileUrls(_ idSet: Set<UUID>) -> Void {
@@ -148,69 +168,10 @@ struct FileListView: View {
         selectedUrls = selectedFileSet.map({ $0!.url })
     }
     
-    @ViewBuilder private func createItem(file: FileInfo) -> some View {
-        switch viewStyle {
-        case .icon:
-            HStack {
-                if file.url.pathExtension == "jpg" {
-                    AsyncImage(url: file.url) { image in
-                        image.resizable()
-                    } placeholder: {
-                        ProgressView()
-                    }.frame(width: 128, height: 128)
-                }
-                Text(file.name)
-            }
-        case .list:
-            VStack {
-                if file.url.pathExtension == "jpg" {
-                    Image(nsImage: NSImage(byReferencing: file.url))
-                        .resizable()
-                        .frame(width: 64, height: 64)
-                }
-                Text(file.name)
-            }
-        }
-    }
-
-    private func loadImage(file: FileInfo) {
-        let fileUrl = file.url
-
-        if !ViewHelper.isImage(fileUrl) {
-            return
-        }
-
-        DispatchQueue.global(qos: .userInitiated).async {
-            guard let nsImage = NSImage(contentsOf: fileUrl) else {
-                return
-            }
-
-            DispatchQueue.main.async {
-                file.image = Image(nsImage: nsImage)
-            }
-        }
-    }
-}
-
-struct ImageView: View {
-    
-    let imageLength: Double = 64
-    
-    @ObservedObject var file: FileInfo
-    
-    var body: some View {
-        if let image = file.image {
-            image
-                .resizable()
-                .aspectRatio(contentMode: ContentMode.fit)
-                .frame(width: imageLength, height: imageLength)
-                .cornerRadius(5)
-        }
-    }
 }
 
 struct FileListView_Previews: PreviewProvider {
     static var previews: some View {
-        FileListView(rootDirUrl: URL(fileURLWithPath: "."), selectedUrls: .constant([URL]()), searchText: .constant(""), searchScope: .constant(.currentDir))
+        FileListView(rootDirUrl: URL(dirPathString: "."), selectedUrls: .constant([URL]()), searchText: .constant(""), searchScope: .constant(.currentDir))
     }
 }

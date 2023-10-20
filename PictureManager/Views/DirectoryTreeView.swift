@@ -89,7 +89,7 @@ struct DirectoryTreeView: View {
     }
     
     private func createDirInfo(path: String, with consume: (DirectoryInfo) -> Void = { _ in return }) -> DirectoryInfo {
-        let url = URL(fileURLWithPath: path, isDirectory: true)
+        let url: URL = URL(dirPathString: path)
         return createDirInfo(url: url, with: consume)
     }
     
@@ -99,7 +99,7 @@ struct DirectoryTreeView: View {
         consume(dir)
         
         dirIdDict[dir.id] = dir
-        Self.logger.debug("Added \(dir.url.path) to dictionary.")
+        Self.logger.debug("Added \(dir.url.purePath) to dictionary.")
         return dir
     }
     
@@ -112,7 +112,7 @@ struct DirectoryTreeView: View {
             }
             
             dirIdDict.removeValue(forKey: id)
-            Self.logger.debug("Removed \(dir.url.path) from dictionary.")
+            Self.logger.debug("Removed \(dir.url.purePath) from dictionary.")
         }
     }
     
@@ -147,7 +147,7 @@ struct DirectoryTreeView: View {
     }
     
     private func refreshDirTree() {
-        rootDirs.append(DirectoryInfo(url: URL(fileURLWithPath: ".")))
+        rootDirs.append(DirectoryInfo(url: URL(dirPathString: ".")))
         rootDirs.removeLast()
     }
     
@@ -172,7 +172,7 @@ struct DirectoryTreeView: View {
             selectedDir.children = []
             
             do {
-                var subDirs = try FileSystemManager.default.directoriesOfDirectory(atPath: selectedDir.url.path)
+                var subDirs = try FileSystemManager.default.itemsOfDirectory(atPath: selectedDir.url.purePath, isDirectory: true)
                 subDirs.sort(by: <)
                 
                 for subDir in subDirs {
@@ -201,10 +201,10 @@ struct NodeView: View {
         .onTapGesture {
             selectedNode = node
             do {
-                let subDirs = try FileSystemManager.default.directoriesOfDirectory(atPath: node.url.path)
+                let subDirs = try FileSystemManager.default.itemsOfDirectory(atPath: node.url.purePath, isDirectory: true)
                 for subDir in subDirs {
                     node.children = []
-                    node.children!.append(DirectoryInfo(url: URL(fileURLWithPath: subDir, isDirectory: true)))
+                    node.children!.append(DirectoryInfo(url: URL(dirPathString: subDir)))
                 }
             } catch let error as NSError {
                 print("Cannot list subdirectories. \(error)")
@@ -215,6 +215,6 @@ struct NodeView: View {
 
 struct DirectoryTreeView_Previews: PreviewProvider {
     static var previews: some View {
-        DirectoryTreeView(selectedUrl: .constant(URL(fileURLWithPath: ".")))
+        DirectoryTreeView(selectedUrl: .constant(URL(dirPathString: ".")))
     }
 }

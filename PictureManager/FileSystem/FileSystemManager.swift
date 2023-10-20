@@ -21,38 +21,33 @@ struct FileSystemManager {
     }
     
     /**
-     Searches items of specified directory.
+     Searches items of specified directory and returns the full paths of any contained items.
      
      - Parameter path: The path to the directory whose contents you want to enumerate.
      
-     - Returns: An array of NSString objects, each of which identifies a file, directory, or symbolic link contained in path. Returns an empty array if the directory exists but has no contents.
+     - Returns: An array of full paths, each of which identifies a file, directory, or symbolic link contained in path. Returns an empty array if the directory exists but has no contents.
      
      */
-    func contentsOfDirectory(atPath path: String) throws -> [String] {
+    func itemsOfDirectory(atPath path: String) throws -> [String] {
         var contents = try fileManager.contentsOfDirectory(atPath: path)
         contents = contents.map { content in "\(path)/\(content)" }
         
         return contents
     }
     
-    private func filterContentOfDirectory(atPath path: String, _ isIncluded: (String) -> Bool) throws -> [String] {
-        let contents = try contentsOfDirectory(atPath: path)
-        return contents.filter(isIncluded)
-    }
-    
-    func filesOfDirectory(atPath path: String) throws -> [String] {
-        return try filterContentOfDirectory(atPath: path) { content in
-            var isDirectory: ObjCBool = false
-            let exists = fileManager.fileExists(atPath: content, isDirectory: &isDirectory)
-            return exists && !isDirectory.boolValue
+    func isDirectory(atPath path: String) -> Bool? {
+        var isDirectory: ObjCBool = false
+        let exists = fileManager.fileExists(atPath: path, isDirectory: &isDirectory)
+        if !exists {
+            return nil
+        } else {
+            return isDirectory.boolValue
         }
     }
     
-    func directoriesOfDirectory(atPath path: String) throws -> [String] {
-        return try filterContentOfDirectory(atPath: path) { content in
-            var isDirectory: ObjCBool = false
-            let exists = fileManager.fileExists(atPath: content, isDirectory: &isDirectory)
-            return exists && isDirectory.boolValue
+    func itemsOfDirectory(atPath path: String, isDirectory forDirectory: Bool) throws -> [String] {
+        return try itemsOfDirectory(atPath: path).filter { item in
+            forDirectory == isDirectory(atPath: item)
         }
     }
     

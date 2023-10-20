@@ -2,7 +2,7 @@
 //  FileTreeView.swift
 //  PictureManager
 //
-//  Created on 10/18/23.
+//  Created on 2023/10/18.
 //
 
 import SwiftUI
@@ -19,18 +19,16 @@ struct FileTreeView: View {
     
     @Binding var selectionSet: Set<UUID>
     
-    let loadImage: ((FileInfo) -> Void)?
-    
     var body: some View {
         List(fileInfos, selection: $selectionSet) { file in
             HStack {
-                ImageView(file: file)
+                FileThumbnailView(thumbnail: file.thumbnail, isDirectory: file is DirectoryInfo)
                 Text(file.name)
             }
             .onAppear {
-                if !file.loaded {
-                    loadImage?(file)
-                    file.loaded = true
+                if !file.thumbnail.requested {
+                    ViewHelper.loadThumbnail(file: file)
+                    file.thumbnail.requested = true
                 }
             }
         }
@@ -39,6 +37,6 @@ struct FileTreeView: View {
 
 struct FileGridView_Previews: PreviewProvider {
     static var previews: some View {
-        FileTreeView(fileInfos: .constant([FileInfo]()), selectionSet: .constant(Set<UUID>()), loadImage: nil)
+        FileTreeView(fileInfos: .constant([FileInfo]()), selectionSet: .constant(Set<UUID>()))
     }
 }

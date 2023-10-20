@@ -16,7 +16,7 @@ struct ImageDetailView: View {
     var fileUrl: URL?
     
     var body: some View {
-        if ViewHelper.isImage(fileUrl) {
+        if ViewHelper.isImage(url: fileUrl) {
             Image(nsImage: NSImage(byReferencing: fileUrl!))
                 .resizable()
                 .aspectRatio(contentMode: ContentMode.fit)
@@ -24,14 +24,10 @@ struct ImageDetailView: View {
                        minHeight: imageMinHeight, maxHeight: .infinity)
         }
     }
-    
-    private func loadFileAttributes() {
-        
-    }
 }
 
 struct ImageDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        ImageDetailView(fileUrl: URL(fileURLWithPath: "./Resources/Xcode.png"))
+        ImageDetailView(fileUrl: URL(fileNotDirPathString: "./Resources/Xcode.png"))
     }
 }

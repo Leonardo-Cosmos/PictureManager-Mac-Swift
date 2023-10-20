@@ -1,5 +1,5 @@
 //
-//  DirectoryInfo.swift
+//  FileInfo.swift
 //  PictureManager
 //
 //  Created on 2021/4/11.
@@ -18,14 +18,10 @@ class FileInfo: Identifiable, Hashable, Equatable, ObservableObject {
     
     let url: URL
     
-    var loaded: Bool
-    
-    @Published var image: Image?
+    let thumbnail = ThumbnailCache()
     
     init(url: URL) {
         self.url = url
-        
-        self.loaded = false
     }
     
     var name: String {
