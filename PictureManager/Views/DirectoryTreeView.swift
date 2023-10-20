@@ -172,11 +172,13 @@ struct DirectoryTreeView: View {
             selectedDir.children = []
             
             do {
-                var subDirs = try FileSystemManager.default.itemsOfDirectory(atPath: selectedDir.url.purePath, isDirectory: true)
-                subDirs.sort(by: <)
+                var subDirUrls = try FileSystemManager.default.itemsOfDirectory(dirUrl: selectedDir.url, isDirectory: true)
+                subDirUrls.sort { (lUrl, rUrl) in
+                    lUrl.purePath < rUrl.purePath
+                }
                 
-                for subDir in subDirs {
-                    selectedDir.children!.append(createDirInfo(path: subDir))
+                for subDirUrl in subDirUrls {
+                    selectedDir.children!.append(createDirInfo(url: subDirUrl))
                 }
                 
             } catch let error as NSError {
@@ -201,10 +203,10 @@ struct NodeView: View {
         .onTapGesture {
             selectedNode = node
             do {
-                let subDirs = try FileSystemManager.default.itemsOfDirectory(atPath: node.url.purePath, isDirectory: true)
-                for subDir in subDirs {
+                let subDirUrls = try FileSystemManager.default.itemsOfDirectory(dirUrl: node.url, isDirectory: true)
+                for subDirUrl in subDirUrls {
                     node.children = []
-                    node.children!.append(DirectoryInfo(url: URL(dirPathString: subDir)))
+                    node.children!.append(DirectoryInfo(url: subDirUrl))
                 }
             } catch let error as NSError {
                 print("Cannot list subdirectories. \(error)")

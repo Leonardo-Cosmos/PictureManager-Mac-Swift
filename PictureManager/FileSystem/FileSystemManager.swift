@@ -25,17 +25,34 @@ struct FileSystemManager {
      
      - Parameter path: The path to the directory whose contents you want to enumerate.
      
-     - Returns: An array of full paths, each of which identifies a file, directory, or symbolic link contained in path. Returns an empty array if the directory exists but has no contents.
+     - Returns: An array of URL objects, each of which identifies a file, directory, or symbolic link contained in path. Returns an empty array if the directory exists but has no contents.
      
      */
-    func itemsOfDirectory(atPath path: String) throws -> [String] {
-        var contents = try fileManager.contentsOfDirectory(atPath: path)
-        contents = contents.map { content in "\(path)/\(content)" }
+    func itemsOfDirectory(dirUrl: URL) throws -> [URL] {
+        guard dirUrl.hasDirectoryPath else {
+            throw NSError(domain: NSURLErrorDomain, code: 0, userInfo: [
+                NSLocalizedDescriptionKey: "URL doesn't identify a directory path",
+                NSFilePathErrorKey: dirUrl.purePath
+            ])
+        }
         
-        return contents
+        let contents = try fileManager.contentsOfDirectory(atPath: dirUrl.purePath)
+        let urls = contents.map { content -> URL? in
+            var fileUrl = dirUrl.appending(pathString: content)
+            if let isDirectory = isDirectoryPath(atPath: fileUrl.purePath) {
+                if isDirectory {
+                    fileUrl = URL(dirPathString: fileUrl.purePath)
+                }
+            } else {
+                return nil
+            }
+            return fileUrl
+        }.filter({ $0 != nil }).map({ $0! })
+        
+        return urls
     }
     
-    func isDirectory(atPath path: String) -> Bool? {
+    private func isDirectoryPath(atPath path: String) -> Bool? {
         var isDirectory: ObjCBool = false
         let exists = fileManager.fileExists(atPath: path, isDirectory: &isDirectory)
         if !exists {
@@ -45,9 +62,9 @@ struct FileSystemManager {
         }
     }
     
-    func itemsOfDirectory(atPath path: String, isDirectory forDirectory: Bool) throws -> [String] {
-        return try itemsOfDirectory(atPath: path).filter { item in
-            forDirectory == isDirectory(atPath: item)
+    func itemsOfDirectory(dirUrl: URL, isDirectory forDirectory: Bool) throws -> [URL] {
+        return try itemsOfDirectory(dirUrl: dirUrl).filter { item in
+            forDirectory == item.hasDirectoryPath
         }
     }
     

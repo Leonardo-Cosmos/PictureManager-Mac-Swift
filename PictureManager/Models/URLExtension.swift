@@ -46,4 +46,12 @@ extension URL {
         }
     }
     
+    func appending(pathString: String) -> URL {
+        if #available(macOS 13.0, *) {
+            return appending(path: pathString)
+        } else {
+            return appendingPathComponent(pathString)
+        }
+    }
+    
 }

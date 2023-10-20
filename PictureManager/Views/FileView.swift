@@ -94,7 +94,7 @@ struct FileListView: View {
                             } else  if let fileUrl = fileUrl {
                                 do {
                                     try FileSystemManager.default.copyFile(fileUrl.lastPathComponent, from: fileUrl.deletingLastPathComponent().purePath, to: rootDirUrl!.purePath)
-                                    addFile(filePath: fileUrl.purePath)
+                                    addFile(fileUrl: fileUrl)
                                 } catch let error {
                                     Self.logger.error("Cannot paste file, \(error.localizedDescription)")
                                 }
@@ -116,17 +116,15 @@ struct FileListView: View {
 
         Self.logger.debug("List files of directory \(dirUrl.purePath)")
 
-        var filePaths: [String]
+        var fileUrls: [URL]
         do {
-            filePaths = try FileSystemManager.default.itemsOfDirectory(atPath: dirUrl.purePath)
+            fileUrls = try FileSystemManager.default.itemsOfDirectory(dirUrl: dirUrl)
         } catch let error as NSError {
             Self.logger.error("Cannot list files. \(error)")
             return
         }
 
-        Self.logger.debug("Number of files \(filePaths.count)")
-
-        filePaths.forEach(addFile)
+        fileUrls.forEach(addFile)
 
         if sortBy == .name {
             fileInfos.sort { lFile, rFile in
@@ -135,21 +133,10 @@ struct FileListView: View {
         }
     }
     
-    private func addFile(filePath: String) {
-        guard let isDirectory = FileSystemManager.default.isDirectory(atPath: filePath) else {
-            return
-        }
-        
-        var fileUrl: URL
-        if isDirectory {
-            fileUrl = URL(dirPathString: filePath)
-        } else {
-            fileUrl = URL(fileNotDirPathString: filePath)
-        }
-        
+    private func addFile(fileUrl: URL) {
         var file: FileInfo
         
-        if isDirectory {
+        if fileUrl.hasDirectoryPath {
             file = DirectoryInfo(url: fileUrl)
         } else if ViewHelper.isImage(url: fileUrl) {
             file = ImageFileInfo(url: fileUrl)
