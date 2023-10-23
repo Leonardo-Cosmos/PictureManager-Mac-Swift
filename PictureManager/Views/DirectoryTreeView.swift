@@ -172,7 +172,7 @@ struct DirectoryTreeView: View {
             selectedDir.children = []
             
             do {
-                var subDirUrls = try FileSystemManager.default.itemsOfDirectory(dirUrl: selectedDir.url, isDirectory: true)
+                var subDirUrls = try FileUrlProvider.default.listDirectory(dirUrl: selectedDir.url, fileType: .directory)
                 subDirUrls.sort { (lUrl, rUrl) in
                     lUrl.purePath < rUrl.purePath
                 }
@@ -203,7 +203,7 @@ struct NodeView: View {
         .onTapGesture {
             selectedNode = node
             do {
-                let subDirUrls = try FileSystemManager.default.itemsOfDirectory(dirUrl: node.url, isDirectory: true)
+                let subDirUrls = try FileUrlProvider.default.listDirectory(dirUrl: node.url, fileType: .directory)
                 for subDirUrl in subDirUrls {
                     node.children = []
                     node.children!.append(DirectoryInfo(url: subDirUrl))

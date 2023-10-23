@@ -15,6 +15,12 @@ struct FileSystemManager {
         category: String(describing: Self.self)
     )
     
+    static let defaultInstance = FileSystemManager()
+    
+    static var `default`: FileSystemManager {
+        defaultInstance
+    }
+    
     private let fileManager = FileManager.default
     
     init() {
@@ -28,7 +34,7 @@ struct FileSystemManager {
      - Returns: An array of URL objects, each of which identifies a file, directory, or symbolic link contained in path. Returns an empty array if the directory exists but has no contents.
      
      */
-    func itemsOfDirectory(dirUrl: URL) throws -> [URL] {
+    func filesOfDirectory(dirUrl: URL) throws -> [URL] {
         guard dirUrl.hasDirectoryPath else {
             throw NSError(domain: NSURLErrorDomain, code: 0, userInfo: [
                 NSLocalizedDescriptionKey: "URL doesn't identify a directory path",
@@ -52,19 +58,13 @@ struct FileSystemManager {
         return urls
     }
     
-    private func isDirectoryPath(atPath path: String) -> Bool? {
+    func isDirectoryPath(atPath path: String) -> Bool? {
         var isDirectory: ObjCBool = false
         let exists = fileManager.fileExists(atPath: path, isDirectory: &isDirectory)
         if !exists {
             return nil
         } else {
             return isDirectory.boolValue
-        }
-    }
-    
-    func itemsOfDirectory(dirUrl: URL, isDirectory forDirectory: Bool) throws -> [URL] {
-        return try itemsOfDirectory(dirUrl: dirUrl).filter { item in
-            forDirectory == item.hasDirectoryPath
         }
     }
     
@@ -142,9 +142,5 @@ struct FileSystemManager {
         return try FileSystemManager.type(attributes: self.attributes(filePath))
     }
     
-    static let defaultInstance = FileSystemManager()
-    
-    static var `default`: FileSystemManager {
-        defaultInstance
-    }
 }
+

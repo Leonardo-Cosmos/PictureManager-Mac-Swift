@@ -36,7 +36,7 @@ struct FileListView: View {
     @AppStorage("FileListView.viewStyle")
     private var viewStyle: ViewStyle = .list
 
-    @State private var fileInfos = [FileInfo]()
+    @State private var files = [FileInfo]()
 
     @State private var fileIdDict = [UUID: FileInfo]()
 
@@ -59,13 +59,13 @@ struct FileListView: View {
                     updateSelectedFileUrls(idSet)
                 }
                 .onChange(of: searchText) { searchText in
-                    Self.logger.info("Search: \(searchText)")
+                    searchFiles()
                 }
                 .onChange(of: searchScope) { searchScope in
-                    
+                    searchFiles()
                 }
         } else {
-            FileTreeView(fileInfos: $fileInfos, selectionSet: $selectedIdSet)
+            FileTreeView(fileInfos: $files, selectionSet: $selectedIdSet)
                 .navigationTitle(rootDirUrl?.lastPathComponent ?? "")
                 .onChange(of: rootDirUrl, perform: loadFiles)
                 .onChange(of: selectedIdSet) { idSet in
@@ -94,7 +94,7 @@ struct FileListView: View {
                             } else  if let fileUrl = fileUrl {
                                 do {
                                     try FileSystemManager.default.copyFile(fileUrl.lastPathComponent, from: fileUrl.deletingLastPathComponent().purePath, to: rootDirUrl!.purePath)
-                                    addFile(fileUrl: fileUrl)
+                                    addFiles(fileUrls: [fileUrl])
                                 } catch let error {
                                     Self.logger.error("Cannot paste file, \(error.localizedDescription)")
                                 }
@@ -106,7 +106,7 @@ struct FileListView: View {
     }
 
     private func loadFiles(dirUrl: URL?) {
-        fileInfos.removeAll()
+        files.removeAll()
         fileIdDict.removeAll()
         selectedIdSet.removeAll()
 
@@ -118,41 +118,80 @@ struct FileListView: View {
 
         var fileUrls: [URL]
         do {
-            fileUrls = try FileSystemManager.default.itemsOfDirectory(dirUrl: dirUrl)
+            fileUrls = try FileSystemManager.default.filesOfDirectory(dirUrl: dirUrl)
         } catch let error as NSError {
             Self.logger.error("Cannot list files. \(error)")
             return
         }
 
-        fileUrls.forEach(addFile)
+        addFiles(fileUrls: fileUrls)
 
         if sortBy == .name {
-            fileInfos.sort { lFile, rFile in
+            files.sort { lFile, rFile in
                 return lFile.url.purePath < rFile.url.purePath
             }
         }
     }
     
-    private func addFile(fileUrl: URL) {
+    private func addFiles(fileUrls: [URL], isSearched: Bool = false) {
+                
+        var addedFileInfos: [FileInfo] = []
         var file: FileInfo
-        
-        if fileUrl.hasDirectoryPath {
-            file = DirectoryInfo(url: fileUrl)
-        } else if ViewHelper.isImage(url: fileUrl) {
-            file = ImageFileInfo(url: fileUrl)
-        } else {
-            file = FileInfo(url: fileUrl)
+        for fileUrl in fileUrls {
+            if fileUrl.hasDirectoryPath {
+                file = DirectoryInfo(url: fileUrl)
+            } else if ViewHelper.isImage(url: fileUrl) {
+                file = ImageFileInfo(url: fileUrl)
+            } else {
+                file = FileInfo(url: fileUrl)
+            }
+            
+            if isSearched {
+                searchedFileIdDict[file.id] = file
+            } else {
+                fileIdDict[file.id] = file
+            }
+            addedFileInfos.append(file)
         }
         
-        fileInfos.append(file)
-        fileIdDict[file.id] = file
+        if isSearched {
+            searchedFiles.append(contentsOf: addedFileInfos)
+        } else {
+            files.append(contentsOf: addedFileInfos)
+        }
+        Self.logger.debug("File count: \(files.count)")
     }
     
-    private func updateSelectedFileUrls(_ idSet: Set<UUID>) -> Void {
+    private func updateSelectedFileUrls(_ idSet: Set<UUID>) {
         let selectedFileSet = idSet
             .map { fileIdDict[$0] }
             .filter { $0 != nil }
         selectedUrls = selectedFileSet.map({ $0!.url })
+    }
+    
+    private func searchFiles() {
+        searchedSelectedIdSet.removeAll()
+        searchedFiles.removeAll()
+        searchedFileIdDict.removeAll()
+        
+        if let rootDirUrl = rootDirUrl {
+            FileUrlProvider.default.listDirectory(dirUrl: rootDirUrl, options: FileUrlProvider.ListDirectoryOptions(fileType: .all, recursive: true,
+                update: { urls in
+                    DispatchQueue.main.async {
+                        addFiles(fileUrls: urls, isSearched: true)
+                    }
+                },
+                complete: { (_, error) in
+                    if let error = error {
+                        Self.logger.error("Search file error: \(error)")
+                    }
+                },
+                match: { url in
+                    Self.logger.debug("File name: \(url.lastPathComponent), matched: \(url.lastPathComponent.contains(searchText))")
+                    return url.lastPathComponent.contains(searchText)
+                }
+            ))
+        }
     }
     
 }
