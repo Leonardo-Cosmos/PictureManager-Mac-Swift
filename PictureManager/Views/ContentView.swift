@@ -49,9 +49,13 @@ struct ContentView: View {
     
     @State private var searchText: String = ""
     
-    @State private var submittedSearchText: String = ""
+    @StateObject private var searchOption = SearchOption()
     
-    @State private var searchScope: SearchFileScope = .currentDir
+    @AppStorage("FilesView.searchScope")
+    private var searchScope: SearchFileScope = .currentDir
+    
+//    @AppStorage
+    private var searchedOptions: [SearchedOption] = []
     
     var body: some View {
         HStack(spacing: 0) {
@@ -73,12 +77,28 @@ struct ContentView: View {
                         Text("Current Folder Recursively").tag(SearchFileScope.currentDirRecursively)
                         Text("Root Folder Recursively").tag(SearchFileScope.rootDirRecursively)
                     }
+                    .searchSuggestions {
+                            ForEach(searchedOptions) { searchedOption in
+                                Text(searchedOption.text)
+                                    .searchCompletion(searchedOption.text)
+                            }
+                    }
+                    .onChange(of: searchScope) { scope in
+                        if !searchText.isEmpty {
+                            searchOption.scope = scope
+                        }
+                    }
                     .onSubmit(of: .search) {
-                        submittedSearchText = searchText
+                        if !searchText.isEmpty {
+                            searchOption.pattern = searchText
+                        }
                     }
             } else {
                 createFileView()
                     .searchable(text: $searchText)
+                    .onSubmit(of: .search) {
+                        searchOption.pattern = searchText
+                    }
             }
             
             if (!fileDetailOnLeft) {
@@ -165,10 +185,10 @@ struct ContentView: View {
     }
     
     @ViewBuilder private func createFileView() -> some View {
-        FileListView(rootDirUrl: selectedDirectoryUrl, selectedUrls: $selectedFileUrls, searchText: $submittedSearchText, searchScope: $searchScope)
+        FileListView(rootDirUrl: selectedDirectoryUrl, selectedUrls: $selectedFileUrls, searchOption: searchOption)
             .frame(minWidth: fileListMinWidth, maxWidth: .infinity, maxHeight: .infinity)
             .onChange(of: selectedFileUrls, perform: { selections in
-                selectedFileUrl = selections.first
+                selectedFileUrl = selections.last
             })
     }
     

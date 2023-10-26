@@ -23,12 +23,10 @@ struct FileListView: View {
     
     @Binding var selectedUrls: [URL]
     
-    @Binding var searchText: String
-    
-    @Binding var searchScope: SearchFileScope
+    @ObservedObject var searchOption: SearchOption
     
     @AppStorage("FileView.searchMethod")
-    private var searchMethod: SearchFileMethod = .substring
+    private var searchMethod: SearchFileMatchingMethod = .substring
 
     @AppStorage("FileListView.sortBy")
     private var sortBy: SortBy = .name
@@ -36,51 +34,37 @@ struct FileListView: View {
     @AppStorage("FileListView.viewStyle")
     private var viewStyle: ViewStyle = .list
 
-    @State private var files = [FileInfo]()
-
-    @State private var fileIdDict = [UUID: FileInfo]()
-
-    @State private var selectedIdSet = Set<UUID>()
+    @StateObject private var status = FileCollectionState()
     
     @Environment(\.isSearching)
     private var isSearching
     
-    @State private var searchedFiles = [FileInfo]()
-    
-    @State private var searchedFileIdDict = [UUID: FileInfo]()
-    
-    @State private var searchedSelectedIdSet = Set<UUID>()
+    @StateObject private var searchedStatus = FileCollectionState()
     
     var body: some View {
         if isSearching {
-            FileTreeView(fileInfos: $searchedFiles, selectionSet: $searchedSelectedIdSet)
+            FileTreeView(fileInfos: $searchedStatus.files, selectionSet: $searchedStatus.selectedIdSet)
                 .navigationTitle("Searching \(rootDirUrl?.lastPathComponent ?? "")")
-                .onChange(of: searchedSelectedIdSet) { idSet in
-                    updateSelectedFileUrls(idSet)
+                .onChange(of: searchedStatus.selectedIdSet) { _ in
+                    updateSelectedFileUrls(isSearched: true)
                 }
-                .onChange(of: searchText) { searchText in
+                .onChange(of: searchOption.pattern) { _ in
                     searchFiles()
                 }
-                .onChange(of: searchScope) { searchScope in
+                .onChange(of: searchOption.scope) { _ in
                     searchFiles()
                 }
+                .onCutCommand(perform: cutSelectedUrls)
+                .onCopyCommand(perform: copySelectedUrls)
         } else {
-            FileTreeView(fileInfos: $files, selectionSet: $selectedIdSet)
+            FileTreeView(fileInfos: $status.files, selectionSet: $status.selectedIdSet)
                 .navigationTitle(rootDirUrl?.lastPathComponent ?? "")
                 .onChange(of: rootDirUrl, perform: loadFiles)
-                .onChange(of: selectedIdSet) { idSet in
-                    updateSelectedFileUrls(idSet)
+                .onChange(of: status.selectedIdSet) { _ in
+                    updateSelectedFileUrls()
                 }
-                .onCutCommand() { () in
-                    let providers = selectedUrls.map(ViewHelper.urlToNSItemProvider)
-                    Self.logger.debug("Cut file count: \(providers.count)")
-                    return providers
-                }
-                .onCopyCommand() {
-                    let providers = selectedUrls.map(ViewHelper.urlToNSItemProvider)
-                    Self.logger.debug("Copied file count: \(providers.count)")
-                    return providers
-                }
+                .onCutCommand(perform: cutSelectedUrls)
+                .onCopyCommand(perform: copySelectedUrls)
                 .onPasteCommand(of: [UTType.fileListPath.identifier], validator: { providers in
                     guard rootDirUrl != nil else {
                         return nil
@@ -106,9 +90,9 @@ struct FileListView: View {
     }
 
     private func loadFiles(dirUrl: URL?) {
-        files.removeAll()
-        fileIdDict.removeAll()
-        selectedIdSet.removeAll()
+        status.files.removeAll()
+        status.fileIdDict.removeAll()
+        status.selectedIdSet.removeAll()
 
         guard let dirUrl = dirUrl else {
             return
@@ -127,13 +111,15 @@ struct FileListView: View {
         addFiles(fileUrls: fileUrls)
 
         if sortBy == .name {
-            files.sort { lFile, rFile in
+            status.files.sort { lFile, rFile in
                 return lFile.url.purePath < rFile.url.purePath
             }
         }
     }
     
     private func addFiles(fileUrls: [URL], isSearched: Bool = false) {
+        
+        let status = isSearched ? searchedStatus : status
                 
         var addedFileInfos: [FileInfo] = []
         var file: FileInfo
@@ -146,36 +132,53 @@ struct FileListView: View {
                 file = FileInfo(url: fileUrl)
             }
             
-            if isSearched {
-                searchedFileIdDict[file.id] = file
-            } else {
-                fileIdDict[file.id] = file
-            }
+            status.fileIdDict[file.id] = file
             addedFileInfos.append(file)
         }
         
-        if isSearched {
-            searchedFiles.append(contentsOf: addedFileInfos)
-        } else {
-            files.append(contentsOf: addedFileInfos)
-        }
-        Self.logger.debug("File count: \(files.count)")
+        status.files.append(contentsOf: addedFileInfos)
+        Self.logger.debug("File count: \(status.files.count)")
     }
     
-    private func updateSelectedFileUrls(_ idSet: Set<UUID>) {
-        let selectedFileSet = idSet
-            .map { fileIdDict[$0] }
+    private func updateSelectedFileUrls(isSearched: Bool = false) {
+        let status = isSearched ? searchedStatus : status
+        
+        let updatedSelectedUrls = status.selectedIdSet
+            .map { id in status.fileIdDict[id] }
             .filter { $0 != nil }
-        selectedUrls = selectedFileSet.map({ $0!.url })
+            .map { $0!.url }
+        
+        let updatedSelectedUrlSet = Set(updatedSelectedUrls)
+        let existingSelectedUrlSet = Set(selectedUrls)
+        
+        let removedUrls = existingSelectedUrlSet.subtracting(updatedSelectedUrlSet)
+        let addedUrls = updatedSelectedUrlSet.subtracting(existingSelectedUrlSet)
+        
+        selectedUrls.removeAll { url in removedUrls.contains(url) }
+        selectedUrls.append(contentsOf: addedUrls)
+    }
+    
+    private func cutSelectedUrls() -> [NSItemProvider] {
+        let providers = selectedUrls.map(ViewHelper.urlToNSItemProvider)
+        Self.logger.debug("Cut file count: \(providers.count)")
+        return providers
+    }
+    
+    private func copySelectedUrls() -> [NSItemProvider] {
+        let providers = selectedUrls.map(ViewHelper.urlToNSItemProvider)
+        Self.logger.debug("Copied file count: \(providers.count)")
+        return providers
     }
     
     private func searchFiles() {
-        searchedSelectedIdSet.removeAll()
-        searchedFiles.removeAll()
-        searchedFileIdDict.removeAll()
+        Self.logger.info("Searching pattern: \(searchOption.pattern), in: \(searchOption.scope.rawValue), of: \(searchOption.matchingTarget.rawValue), by: \(searchOption.matchingMethod.rawValue)")
+        
+        searchedStatus.selectedIdSet.removeAll()
+        searchedStatus.files.removeAll()
+        searchedStatus.fileIdDict.removeAll()
         
         if let rootDirUrl = rootDirUrl {
-            FileUrlProvider.default.listDirectory(dirUrl: rootDirUrl, options: FileUrlProvider.ListDirectoryOptions(fileType: .all, recursive: true,
+            FileUrlProvider.default.listDirectory(dirUrl: rootDirUrl, options: FileUrlProvider.ListDirectoryOption(fileType: .all, recursive: true,
                 update: { urls in
                     DispatchQueue.main.async {
                         addFiles(fileUrls: urls, isSearched: true)
@@ -187,8 +190,7 @@ struct FileListView: View {
                     }
                 },
                 match: { url in
-                    Self.logger.debug("File name: \(url.lastPathComponent), matched: \(url.lastPathComponent.contains(searchText))")
-                    return url.lastPathComponent.contains(searchText)
+                    return url.lastPathComponent.contains(searchOption.pattern)
                 }
             ))
         }
@@ -198,6 +200,6 @@ struct FileListView: View {
 
 struct FileListView_Previews: PreviewProvider {
     static var previews: some View {
-        FileListView(rootDirUrl: URL(dirPathString: "."), selectedUrls: .constant([URL]()), searchText: .constant(""), searchScope: .constant(.currentDir))
+        FileListView(rootDirUrl: URL(dirPathString: "."), selectedUrls: .constant([URL]()), searchOption: SearchOption())
     }
 }

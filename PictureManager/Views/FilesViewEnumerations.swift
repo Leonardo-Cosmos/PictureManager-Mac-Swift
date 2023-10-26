@@ -1,5 +1,5 @@
 //
-//  FileViewEnumerations.swift
+//  FilesViewEnumerations.swift
 //  PictureManager
 //
 //  Created on 2023/10/17.
@@ -37,11 +37,23 @@ enum SearchFileScope: String, CaseIterable, Identifiable {
     }
 }
 
-enum SearchFileMethod: String, CaseIterable, Identifiable {
+enum SearchFileMatchingMethod: String, CaseIterable, Identifiable {
     case substring
     case regex
     
-    var id: SearchFileMethod {
+    var id: SearchFileMatchingMethod {
+        return self
+    }
+}
+
+enum SearchFileMatchingTarget: String, CaseIterable, Identifiable {
+    case name
+    case nameWithoutExtension
+    case nameExtension
+    case path
+    case parentDirPath
+    
+    var id: SearchFileMatchingTarget {
         return self
     }
 }
