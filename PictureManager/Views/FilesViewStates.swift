@@ -10,7 +10,7 @@ import Foundation
 class FileCollectionState: ObservableObject {
 
     /**
-     All files.
+     All files those can be displayed and selected in a files view.
      */
     @Published var files = [FileInfo]()
 

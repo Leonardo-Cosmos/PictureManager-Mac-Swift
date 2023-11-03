@@ -7,8 +7,10 @@
 
 import Foundation
 import SwiftUI
+import System
 
-class FileInfo: Identifiable, Hashable, Equatable, ObservableObject {
+@objc(FileInfo)
+class FileInfo: NSObject, Identifiable, ObservableObject {
     
     static func == (lhs: FileInfo, rhs: FileInfo) -> Bool {
         lhs.url == rhs.url
@@ -20,16 +22,61 @@ class FileInfo: Identifiable, Hashable, Equatable, ObservableObject {
     
     let thumbnail = ThumbnailCache()
     
+    @Published var permissions: Int16?
+    
+    @objc @Published var creationDate: Date?
+    
+    @Published var contentModificationDate: Date?
+    
+    @Published var contentAccessDate: Date?
+    
+    @Published var addedToDirectoryDate: Date?
+    
+    @Published var attributeModificationDate: Date?
+    
     init(url: URL) {
         self.url = url
     }
     
-    var name: String {
+    convenience init(path: String) {
+        self.init(url: URL(fileNotDirPathString: path))
+    }
+    
+    @objc var name: String {
         url.lastPathComponent
     }
     
-    func hash(into hasher: inout Hasher) {
+    override func isEqual(_ object: Any?) -> Bool {
+        guard let other = object as? Self else {
+            return false
+        }
+        return url == other.url
+    }
+    
+    override var hash: Int {
+        var hasher = Hasher()
+        hasher.combine(super.hash)
         hasher.combine(url)
+        return hasher.finalize()
+    }
+    
+    var resourceKeySet: Set<URLResourceKey> {
+        var resourceKeySet = Set<URLResourceKey>()
+        resourceKeySet.insert(.fileResourceTypeKey)
+        resourceKeySet.insert(.creationDateKey)
+        resourceKeySet.insert(.contentModificationDateKey)
+        resourceKeySet.insert(.contentAccessDateKey)
+        resourceKeySet.insert(.addedToDirectoryDateKey)
+        resourceKeySet.insert(.attributeModificationDateKey)
+        return resourceKeySet
+    }
+    
+    func populateResourceValues(_ resourceValues: URLResourceValues) {
+        creationDate = resourceValues.creationDate
+        contentModificationDate = resourceValues.contentModificationDate
+        contentAccessDate = resourceValues.contentAccessDate
+        addedToDirectoryDate = resourceValues.addedToDirectoryDate
+        attributeModificationDate = resourceValues.attributeModificationDate
     }
     
 }

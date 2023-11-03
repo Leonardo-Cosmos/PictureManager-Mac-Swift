@@ -36,7 +36,7 @@ struct FileDetailView: View {
         if url != nil {
             Self.logger.debug("Load file attribute: \(url!.purePath)")
             if let fileAttributes = try? FileSystemManager.default.attributes(url!.purePath) {
-                size = formatFileSize(FileSystemManager.size(attributes: fileAttributes))
+//                size = formatFileSize(FileSystemManager.size(attributes: fileAttributes))
             }
         } else {
             size = ""

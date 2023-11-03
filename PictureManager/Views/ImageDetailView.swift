@@ -16,12 +16,14 @@ struct ImageDetailView: View {
     var fileUrl: URL?
     
     var body: some View {
-        if ViewHelper.isImage(url: fileUrl) {
-            Image(nsImage: NSImage(byReferencing: fileUrl!))
-                .resizable()
-                .aspectRatio(contentMode: ContentMode.fit)
-                .frame(minWidth: imageMinWidth, maxWidth: .infinity,
-                       minHeight: imageMinHeight, maxHeight: .infinity)
+        if let fileUrl = fileUrl {
+            if ViewHelper.isImage(path: fileUrl.purePath) {
+                Image(nsImage: NSImage(byReferencing: fileUrl))
+                    .resizable()
+                    .aspectRatio(contentMode: ContentMode.fit)
+                    .frame(minWidth: imageMinWidth, maxWidth: .infinity,
+                           minHeight: imageMinHeight, maxHeight: .infinity)
+            }
         }
     }
 }

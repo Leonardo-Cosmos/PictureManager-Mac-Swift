@@ -19,4 +19,8 @@ class DirectoryInfo: FileInfo {
         self.children = children
     }
     
+    convenience init(path: String, children: [DirectoryInfo]? = nil) {
+        self.init(url: URL(dirPathString: path), children: children)
+    }
+    
 }

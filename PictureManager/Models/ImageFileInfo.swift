@@ -8,6 +8,6 @@
 import Foundation
 import SwiftUI
 
-class ImageFileInfo: FileInfo {
+class ImageFileInfo: RegularFileInfo {
     
 }

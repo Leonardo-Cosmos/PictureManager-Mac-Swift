@@ -29,6 +29,7 @@
 		A72A94052AE22C5B00A8544F /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72A94042AE22C5B00A8544F /* ThumbnailCache.swift */; };
 		A72A940B2AE3DD2800A8544F /* FileUrlProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72A940A2AE3DD2800A8544F /* FileUrlProvider.swift */; };
 		A72A940D2AE762CA00A8544F /* FilesViewStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72A940C2AE762CA00A8544F /* FilesViewStates.swift */; };
+		A72A940F2AF341B700A8544F /* RegularFileInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72A940E2AF341B700A8544F /* RegularFileInfo.swift */; };
 		A72C47EA28A79D1300100C9E /* ImageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72C47E928A79D1300100C9E /* ImageDetailView.swift */; };
 		A72C47ED28A7ECA200100C9E /* Xcode.png in Resources */ = {isa = PBXBuildFile; fileRef = A72C47EC28A7ECA200100C9E /* Xcode.png */; };
 		A73265C32AD13F410071C7AA /* ItemProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A73265C22AD13F410071C7AA /* ItemProvider.swift */; };
@@ -82,6 +83,7 @@
 		A72A94042AE22C5B00A8544F /* ThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCache.swift; sourceTree = "<group>"; };
 		A72A940A2AE3DD2800A8544F /* FileUrlProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileUrlProvider.swift; sourceTree = "<group>"; };
 		A72A940C2AE762CA00A8544F /* FilesViewStates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilesViewStates.swift; sourceTree = "<group>"; };
+		A72A940E2AF341B700A8544F /* RegularFileInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegularFileInfo.swift; sourceTree = "<group>"; };
 		A72C47E928A79D1300100C9E /* ImageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageDetailView.swift; sourceTree = "<group>"; };
 		A72C47EC28A7ECA200100C9E /* Xcode.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Xcode.png; sourceTree = "<group>"; };
 		A73265C12ACFD0510071C7AA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -183,6 +185,7 @@
 			children = (
 				A70C4EBF289001F4000B60FB /* FileInfo.swift */,
 				A70C4EC0289001F4000B60FB /* DirectoryInfo.swift */,
+				A72A940E2AF341B700A8544F /* RegularFileInfo.swift */,
 				A72A93FE2AE0EEAB00A8544F /* ImageFileInfo.swift */,
 				A72A94042AE22C5B00A8544F /* ThumbnailCache.swift */,
 				A70C4EC1289001F4000B60FB /* ModelData.swift */,
@@ -366,6 +369,7 @@
 				A72A93FB2ADF800200A8544F /* FileTreeView.swift in Sources */,
 				A70C4EBE28900003000B60FB /* ContentView.swift in Sources */,
 				A72A940B2AE3DD2800A8544F /* FileUrlProvider.swift in Sources */,
+				A72A940F2AF341B700A8544F /* RegularFileInfo.swift in Sources */,
 				A72A94032AE2151600A8544F /* URLExtension.swift in Sources */,
 				A72A94052AE22C5B00A8544F /* ThumbnailCache.swift in Sources */,
 				A70C4EC6289001FE000B60FB /* FileSystemManager.swift in Sources */,

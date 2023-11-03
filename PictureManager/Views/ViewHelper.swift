@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import System
 import QuickLookThumbnailing
 import UniformTypeIdentifiers
 import os
@@ -40,12 +41,9 @@ struct ViewHelper {
     
     static let imagePathExtensions = ["jpg", "jpeg", "png"]
     
-    static func isImage(url: URL?) -> Bool {
-        guard let url = url else {
-            return false
-        }
-        
-        return imagePathExtensions.contains(where: { $0 == url.pathExtension })
+    static func isImage(path: String) -> Bool {
+        let filePath = FilePath(path)
+        return imagePathExtensions.contains(where: { $0 == filePath.extension })
         
 //        let pastedboard = NSPasteboard.general
 //        pastedboard.clearContents()
@@ -58,7 +56,7 @@ struct ViewHelper {
         NSItemProvider(item: url.purePath as NSString, typeIdentifier: UTType.fileListPath.identifier)
     }
     
-    static func urlFromNSItemProvider(_ provider: NSItemProvider, completionHandler: @escaping (URL?, Error?) -> Void) {
+    static func pathFromNSItemProvider(_ provider: NSItemProvider, completionHandler: @escaping (String?, Error?) -> Void) {
         
         provider.loadItem(forTypeIdentifier: UTType.fileListPath.identifier) { (item, error) in
             if let error = error {
@@ -78,9 +76,7 @@ struct ViewHelper {
                     throw LoadUrlError.notStringError
                 }
                 
-                let fileUrl = URL(filePathString: path)
-                
-                completionHandler(fileUrl, nil)
+                completionHandler(path, nil)
                 
             } catch let err as NSError {
                 completionHandler(nil, err)
@@ -127,6 +123,22 @@ struct ViewHelper {
             Self.logger.debug("Generated thumbnail, path: \(url.purePath) type: \(type.rawValue)")
             
             updateHandler(nsImage)
+        }
+    }
+    
+    static func loadUrlResourceValues(file: FileInfo) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            var resourceValues: URLResourceValues
+            do {
+                resourceValues = try file.url.resourceValues(forKeys: file.resourceKeySet)
+            } catch let err {
+                Self.logger.error("Cannot retrieve URL resource values, path: \(file.url.purePath), \(err)")
+                return
+            }
+            
+            DispatchQueue.main.async {
+                file.populateResourceValues(resourceValues)
+            }
         }
     }
     

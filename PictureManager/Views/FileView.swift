@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import System
 import UniformTypeIdentifiers
 import os
 
@@ -72,13 +73,14 @@ struct FileListView: View {
                     return providers
                 }, perform: { (providers: [NSItemProvider]) in
                     for provider in providers {
-                        ViewHelper.urlFromNSItemProvider(provider) { (fileUrl, error) in
+                        ViewHelper.pathFromNSItemProvider(provider) { (path, error) in
                             if let error = error {
                                 Self.logger.error("Cannot load pasted path, \(error.localizedDescription)")
-                            } else  if let fileUrl = fileUrl {
+                            } else  if let path = path {
                                 do {
-                                    try FileSystemManager.default.copyFile(fileUrl.lastPathComponent, from: fileUrl.deletingLastPathComponent().purePath, to: rootDirUrl!.purePath)
-                                    addFiles(fileUrls: [fileUrl])
+                                    let filePath = FilePath(path)
+                                    try FileSystemManager.default.copyFile(filePath.lastComponent!.string, from: filePath.removingLastComponent().string, to: rootDirUrl!.purePath)
+                                    addFiles(filePaths: [path])
                                 } catch let error {
                                     Self.logger.error("Cannot paste file, \(error.localizedDescription)")
                                 }
@@ -90,9 +92,9 @@ struct FileListView: View {
     }
 
     private func loadFiles(dirUrl: URL?) {
-        status.files.removeAll()
-        status.fileIdDict.removeAll()
         status.selectedIdSet.removeAll()
+        status.fileIdDict.removeAll()
+        status.files.removeAll()
 
         guard let dirUrl = dirUrl else {
             return
@@ -100,15 +102,15 @@ struct FileListView: View {
 
         Self.logger.debug("List files of directory \(dirUrl.purePath)")
 
-        var fileUrls: [URL]
+        var filePaths: [String]
         do {
-            fileUrls = try FileSystemManager.default.filesOfDirectory(dirUrl: dirUrl)
+            filePaths = try FileSystemManager.default.filesOfDirectory(dirPath: dirUrl.purePath)
         } catch let error as NSError {
             Self.logger.error("Cannot list files. \(error)")
             return
         }
 
-        addFiles(fileUrls: fileUrls)
+        addFiles(filePaths: filePaths)
 
         if sortBy == .name {
             status.files.sort { lFile, rFile in
@@ -117,20 +119,34 @@ struct FileListView: View {
         }
     }
     
-    private func addFiles(fileUrls: [URL], isSearched: Bool = false) {
+    private func addFiles(filePaths: [String], isSearched: Bool = false) {
         
         let status = isSearched ? searchedStatus : status
                 
         var addedFileInfos: [FileInfo] = []
         var file: FileInfo
-        for fileUrl in fileUrls {
-            if fileUrl.hasDirectoryPath {
-                file = DirectoryInfo(url: fileUrl)
-            } else if ViewHelper.isImage(url: fileUrl) {
-                file = ImageFileInfo(url: fileUrl)
-            } else {
-                file = FileInfo(url: fileUrl)
+        for filePath in filePaths {
+            guard let fileAttributes = try? FileSystemManager.default.attributes(filePath) else {
+                continue
             }
+            
+            let fileType = FileSystemManager.type(attributes: fileAttributes)
+            
+            switch fileType {
+            case FileAttributeType.typeDirectory:
+                file = DirectoryInfo(path: filePath)
+            case FileAttributeType.typeRegular:
+                if ViewHelper.isImage(path: filePath) {
+                    file = ImageFileInfo(path: filePath)
+                } else {
+                    file = RegularFileInfo(path: filePath)
+                }
+            default:
+                file = FileInfo(path: filePath)
+            }
+            
+            file.permissions = FileSystemManager.posixPermissions(attributes: fileAttributes)
+            ViewHelper.loadUrlResourceValues(file: file)
             
             status.fileIdDict[file.id] = file
             addedFileInfos.append(file)
@@ -177,11 +193,14 @@ struct FileListView: View {
         searchedStatus.files.removeAll()
         searchedStatus.fileIdDict.removeAll()
         
+        let recursive = searchOption.scope == .currentDirRecursively || searchOption.scope == .rootDirRecursively
+        
         if let rootDirUrl = rootDirUrl {
-            FileUrlProvider.default.listDirectory(dirUrl: rootDirUrl, options: FileUrlProvider.ListDirectoryOption(fileType: .all, recursive: true,
+            FileUrlProvider.default.listDirectory(dirUrl: rootDirUrl, options: FileUrlProvider.ListDirectoryOption(fileType: .all, recursive: recursive,
                 update: { urls in
+                    let paths = urls.map { $0.purePath }
                     DispatchQueue.main.async {
-                        addFiles(fileUrls: urls, isSearched: true)
+                        addFiles(filePaths: paths, isSearched: true)
                     }
                 },
                 complete: { (_, error) in

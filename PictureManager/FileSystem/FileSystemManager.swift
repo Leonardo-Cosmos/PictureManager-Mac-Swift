@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import System
 import os
 
 struct FileSystemManager {
@@ -56,6 +57,24 @@ struct FileSystemManager {
         }.filter({ $0 != nil }).map({ $0! })
         
         return urls
+    }
+    
+    func filesOfDirectory(dirPath: String) throws -> [String] {
+        guard isDirectoryPath(atPath: dirPath) ?? false else {
+            throw NSError(domain: NSURLErrorDomain, code: 0, userInfo: [
+                NSLocalizedDescriptionKey: "URL doesn't identify a directory path",
+                NSFilePathErrorKey: dirPath
+            ])
+        }
+        
+        let contents = try fileManager.contentsOfDirectory(atPath: dirPath)
+        let dirFilePath = FilePath(dirPath)
+        let contentPaths = contents.map { content in
+            let contentFilePath = dirFilePath.appending(content)
+            return contentFilePath.string
+        }.filter({ $0 != nil }).map({ $0! })
+        
+        return contentPaths
     }
     
     func isDirectoryPath(atPath path: String) -> Bool? {
@@ -126,20 +145,32 @@ struct FileSystemManager {
         }
     }
     
-    static func size(attributes: [FileAttributeKey: Any]) -> UInt64 {
-        return attributes[FileAttributeKey.size] as! UInt64
+    static func size(attributes: [FileAttributeKey: Any]) -> UInt64? {
+        return attributes[FileAttributeKey.size] as? UInt64
     }
     
     func size(filePath: String) throws -> UInt64 {
-        return try FileSystemManager.size(attributes: self.attributes(filePath))
+        return try Self.size(attributes: self.attributes(filePath))!
     }
     
-    static func type(attributes: [FileAttributeKey: Any]) -> String {
-        return attributes[FileAttributeKey.type] as! String
+    static func type(attributes: [FileAttributeKey: Any]) -> FileAttributeType? {
+        guard let typeAttribute = attributes[FileAttributeKey.type] as? String else {
+            return nil
+        }
+        
+        return FileAttributeType(rawValue: typeAttribute)
     }
     
-    func type(filePath: String) throws -> String {
-        return try FileSystemManager.type(attributes: self.attributes(filePath))
+    func type(filePath: String) throws -> FileAttributeType {
+        return try Self.type(attributes: self.attributes(filePath))!
+    }
+    
+    static func posixPermissions(attributes: [FileAttributeKey: Any]) -> Int16? {
+        return attributes[FileAttributeKey.posixPermissions] as? Int16
+    }
+    
+    func posixPermissions(filePath: String) throws -> Int16 {
+        return try Self.posixPermissions(attributes: self.attributes(filePath))!
     }
     
 }
