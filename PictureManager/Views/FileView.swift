@@ -80,7 +80,12 @@ struct FileListView: View {
                                 do {
                                     let filePath = FilePath(path)
                                     try FileSystemManager.default.copyFile(filePath.lastComponent!.string, from: filePath.removingLastComponent().string, to: rootDirUrl!.purePath)
-                                    addFiles(filePaths: [path])
+                                    
+                                    // TODO: add pasted file together.
+                                    DispatchQueue.main.async {
+                                        addFiles(filePaths: [path])
+                                    }
+                                    
                                 } catch let error {
                                     Self.logger.error("Cannot paste file, \(error.localizedDescription)")
                                 }
@@ -123,7 +128,7 @@ struct FileListView: View {
         
         let status = isSearched ? searchedStatus : status
                 
-        var addedFileInfos: [FileInfo] = []
+        var addedFiles: [FileInfo] = []
         var file: FileInfo
         for filePath in filePaths {
             guard let fileAttributes = try? FileSystemManager.default.attributes(filePath) else {
@@ -149,11 +154,11 @@ struct FileListView: View {
             ViewHelper.loadUrlResourceValues(file: file)
             
             status.fileIdDict[file.id] = file
-            addedFileInfos.append(file)
+            addedFiles.append(file)
         }
         
-        status.files.append(contentsOf: addedFileInfos)
-        Self.logger.debug("File count: \(status.files.count)")
+        status.files.append(contentsOf: addedFiles)
+        Self.logger.debug("Added file count: \(addedFiles.count), total file count: \(status.files.count)")
     }
     
     private func updateSelectedFileUrls(isSearched: Bool = false) {
