@@ -126,18 +126,27 @@ struct ViewHelper {
         }
     }
     
-    static func loadUrlResourceValues(file: FileInfo) {
+    static func loadUrlResourceValues(files: [FileInfo], complete: (() -> Void)? = nil) {
         DispatchQueue.global(qos: .userInitiated).async {
-            var resourceValues: URLResourceValues
-            do {
-                resourceValues = try file.url.resourceValues(forKeys: file.resourceKeySet)
-            } catch let err {
-                Self.logger.error("Cannot retrieve URL resource values, path: \(file.url.purePath), \(err)")
-                return
+            
+            var fileResourceTuples: [(file: FileInfo, resourceValues: URLResourceValues)] = []
+            for file in files {
+                do {
+                    let resourceValues = try file.url.resourceValues(forKeys: file.resourceKeySet)
+                    fileResourceTuples.append((file, resourceValues))
+                } catch let err {
+                    Self.logger.error("Cannot retrieve URL resource values, path: \(file.url.purePath), \(err)")
+                }
             }
             
             DispatchQueue.main.async {
-                file.populateResourceValues(resourceValues)
+                for fileResourceTuple in fileResourceTuples {
+                    fileResourceTuple.file.populateResourceValues(fileResourceTuple.resourceValues)
+                }
+                
+                if let complete = complete {
+                    complete()
+                }
             }
         }
     }

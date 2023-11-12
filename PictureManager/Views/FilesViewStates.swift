@@ -24,6 +24,15 @@ class FileCollectionState: ObservableObject {
      */
     @Published var selectedIdSet = Set<UUID>()
     
+    /**
+     The sort  order of displayed files.
+     */
+    @Published var sortOrder = [SortDescriptor<FileInfo>]()
+    
+    init() {
+        
+    }
+    
 }
 
 class SearchOption: ObservableObject, Equatable {

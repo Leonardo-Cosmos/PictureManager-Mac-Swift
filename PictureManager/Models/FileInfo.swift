@@ -26,13 +26,15 @@ class FileInfo: NSObject, Identifiable, ObservableObject {
     
     @objc @Published var creationDate: Date?
     
-    @Published var contentModificationDate: Date?
+    @objc @Published var contentModificationDate: Date?
     
-    @Published var contentAccessDate: Date?
+    @objc @Published var contentAccessDate: Date?
     
-    @Published var addedToDirectoryDate: Date?
+    @objc @Published var addedToDirectoryDate: Date?
     
     @Published var attributeModificationDate: Date?
+    
+    @Published var fileSize: Int?
     
     init(url: URL) {
         self.url = url
@@ -63,11 +65,13 @@ class FileInfo: NSObject, Identifiable, ObservableObject {
     var resourceKeySet: Set<URLResourceKey> {
         var resourceKeySet = Set<URLResourceKey>()
         resourceKeySet.insert(.fileResourceTypeKey)
+        
         resourceKeySet.insert(.creationDateKey)
         resourceKeySet.insert(.contentModificationDateKey)
         resourceKeySet.insert(.contentAccessDateKey)
         resourceKeySet.insert(.addedToDirectoryDateKey)
         resourceKeySet.insert(.attributeModificationDateKey)
+        
         return resourceKeySet
     }
     

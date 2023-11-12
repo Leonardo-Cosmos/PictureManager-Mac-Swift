@@ -9,11 +9,23 @@ import Foundation
 
 enum SortBy: String, CaseIterable, Identifiable {
     case name = "name"
-    case dateModified = "dateModified"
-    case dateCreated = "dateCreated"
+    case creationDate = "creationDate"
+    case contentModificationDate = "contentModificationDate"
+    case contentAccessDate = "contentAccessDate"
+    case addedToDirectoryDate = "addedToDirectoryDate"
+    case attributeModificationDate = "attributeModificationDate"
     case size = "size"
 
     var id: SortBy {
+        return self
+    }
+}
+
+enum SortDirection: String, CaseIterable, Identifiable {
+    case forward = "forward"
+    case reverse = "reverse"
+    
+    var id: SortDirection {
         return self
     }
 }

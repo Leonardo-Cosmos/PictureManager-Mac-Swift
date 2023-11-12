@@ -31,22 +31,25 @@ struct FileListView: View {
 
     @AppStorage("FileListView.sortBy")
     private var sortBy: SortBy = .name
+    
+    @AppStorage("FileListView.sortOrder")
+    private var sortDirection: SortDirection = .reverse
 
     @AppStorage("FileListView.viewStyle")
     private var viewStyle: ViewStyle = .list
 
-    @StateObject private var status = FileCollectionState()
+    @StateObject private var filesState = FileCollectionState()
     
     @Environment(\.isSearching)
     private var isSearching
     
-    @StateObject private var searchedStatus = FileCollectionState()
+    @StateObject private var searchedFilesState = FileCollectionState()
     
     var body: some View {
         if isSearching {
-            FileTreeView(fileInfos: $searchedStatus.files, selectionSet: $searchedStatus.selectedIdSet)
+            FileTreeView(fileInfos: $searchedFilesState.files, selectionSet: $searchedFilesState.selectedIdSet, sortOrder: $searchedFilesState.sortOrder)
                 .navigationTitle("Searching \(rootDirUrl?.lastPathComponent ?? "")")
-                .onChange(of: searchedStatus.selectedIdSet) { _ in
+                .onChange(of: searchedFilesState.selectedIdSet) { _ in
                     updateSelectedFileUrls(isSearched: true)
                 }
                 .onChange(of: searchOption.pattern) { _ in
@@ -58,11 +61,14 @@ struct FileListView: View {
                 .onCutCommand(perform: cutSelectedUrls)
                 .onCopyCommand(perform: copySelectedUrls)
         } else {
-            FileTreeView(fileInfos: $status.files, selectionSet: $status.selectedIdSet)
+            FileTreeView(fileInfos: $filesState.files, selectionSet: $filesState.selectedIdSet, sortOrder: $filesState.sortOrder)
                 .navigationTitle(rootDirUrl?.lastPathComponent ?? "")
                 .onChange(of: rootDirUrl, perform: loadFiles)
-                .onChange(of: status.selectedIdSet) { _ in
+                .onChange(of: filesState.selectedIdSet) { _ in
                     updateSelectedFileUrls()
+                }
+                .onChange(of: filesState.sortOrder) { _ in
+                    sortFiles(state: filesState)
                 }
                 .onCutCommand(perform: cutSelectedUrls)
                 .onCopyCommand(perform: copySelectedUrls)
@@ -97,9 +103,9 @@ struct FileListView: View {
     }
 
     private func loadFiles(dirUrl: URL?) {
-        status.selectedIdSet.removeAll()
-        status.fileIdDict.removeAll()
-        status.files.removeAll()
+        filesState.selectedIdSet.removeAll()
+        filesState.fileIdDict.removeAll()
+        filesState.files.removeAll()
 
         guard let dirUrl = dirUrl else {
             return
@@ -114,19 +120,19 @@ struct FileListView: View {
             Self.logger.error("Cannot list files. \(error)")
             return
         }
+        
+        if sortBy == .name {
+            filesState.sortOrder.append(SortDescriptor<FileInfo>(\.contentModificationDate))
+        }
+        
+        
 
         addFiles(filePaths: filePaths)
-
-        if sortBy == .name {
-            status.files.sort { lFile, rFile in
-                return lFile.url.purePath < rFile.url.purePath
-            }
-        }
     }
     
     private func addFiles(filePaths: [String], isSearched: Bool = false) {
         
-        let status = isSearched ? searchedStatus : status
+        let status = isSearched ? searchedFilesState : filesState
                 
         var addedFiles: [FileInfo] = []
         var file: FileInfo
@@ -151,21 +157,28 @@ struct FileListView: View {
             }
             
             file.permissions = FileSystemManager.posixPermissions(attributes: fileAttributes)
-            ViewHelper.loadUrlResourceValues(file: file)
             
             status.fileIdDict[file.id] = file
             addedFiles.append(file)
         }
         
         status.files.append(contentsOf: addedFiles)
+        
+        ViewHelper.loadUrlResourceValues(files: addedFiles) {
+            sortFiles(state: status)
+        }
         Self.logger.debug("Added file count: \(addedFiles.count), total file count: \(status.files.count)")
     }
     
+    private func sortFiles(state: FileCollectionState) {
+        filesState.files.sort(using: filesState.sortOrder.first!)
+    }
+    
     private func updateSelectedFileUrls(isSearched: Bool = false) {
-        let status = isSearched ? searchedStatus : status
+        let state = isSearched ? searchedFilesState : filesState
         
-        let updatedSelectedUrls = status.selectedIdSet
-            .map { id in status.fileIdDict[id] }
+        let updatedSelectedUrls = state.selectedIdSet
+            .map { id in state.fileIdDict[id] }
             .filter { $0 != nil }
             .map { $0!.url }
         
@@ -194,9 +207,9 @@ struct FileListView: View {
     private func searchFiles() {
         Self.logger.info("Searching pattern: \(searchOption.pattern), in: \(searchOption.scope.rawValue), of: \(searchOption.matchingTarget.rawValue), by: \(searchOption.matchingMethod.rawValue)")
         
-        searchedStatus.selectedIdSet.removeAll()
-        searchedStatus.files.removeAll()
-        searchedStatus.fileIdDict.removeAll()
+        searchedFilesState.selectedIdSet.removeAll()
+        searchedFilesState.files.removeAll()
+        searchedFilesState.fileIdDict.removeAll()
         
         let recursive = searchOption.scope == .currentDirRecursively || searchOption.scope == .rootDirRecursively
         

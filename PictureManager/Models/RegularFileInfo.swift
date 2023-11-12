@@ -9,8 +9,6 @@ import Foundation
 
 class RegularFileInfo: FileInfo {
     
-    @Published var fileSize: Int?
-    
     override init(url: URL) {
         super.init(url: url)
     }
