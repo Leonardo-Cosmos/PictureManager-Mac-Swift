@@ -8,7 +8,7 @@
 import SwiftUI
 import os
 
-struct FileTreeView: View {
+struct FilesDetailView: View {
     
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
@@ -63,8 +63,8 @@ struct FileTreeView: View {
     }
 }
 
-struct FileGridView_Previews: PreviewProvider {
+struct FilesDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        FileTreeView(fileInfos: .constant([FileInfo]()), selectionSet: .constant(Set<UUID>()), sortOrder: .constant([SortDescriptor<FileInfo>(\.name)]))
+        FilesDetailView(fileInfos: .constant([FileInfo]()), selectionSet: .constant(Set<UUID>()), sortOrder: .constant([SortDescriptor<FileInfo>(\.name)]))
     }
 }

@@ -10,7 +10,7 @@ import System
 import UniformTypeIdentifiers
 import os
 
-struct FileListView: View {
+struct FilesContentView: View {
     
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
@@ -47,7 +47,7 @@ struct FileListView: View {
     
     var body: some View {
         if isSearching {
-            FileTreeView(fileInfos: $searchedFilesState.files, selectionSet: $searchedFilesState.selectedIdSet, sortOrder: $searchedFilesState.sortOrder)
+            FilesDetailView(fileInfos: $searchedFilesState.files, selectionSet: $searchedFilesState.selectedIdSet, sortOrder: $searchedFilesState.sortOrder)
                 .navigationTitle("Searching \(rootDirUrl?.lastPathComponent ?? "")")
                 .onChange(of: searchedFilesState.selectedIdSet) { _ in
                     updateSelectedFileUrls(isSearched: true)
@@ -61,7 +61,7 @@ struct FileListView: View {
                 .onCutCommand(perform: cutSelectedUrls)
                 .onCopyCommand(perform: copySelectedUrls)
         } else {
-            FileTreeView(fileInfos: $filesState.files, selectionSet: $filesState.selectedIdSet, sortOrder: $filesState.sortOrder)
+            FilesDetailView(fileInfos: $filesState.files, selectionSet: $filesState.selectedIdSet, sortOrder: $filesState.sortOrder)
                 .navigationTitle(rootDirUrl?.lastPathComponent ?? "")
                 .onChange(of: rootDirUrl, perform: loadFiles)
                 .onChange(of: filesState.selectedIdSet) { _ in
@@ -235,8 +235,8 @@ struct FileListView: View {
     
 }
 
-struct FileListView_Previews: PreviewProvider {
+struct FilesContentView_Previews: PreviewProvider {
     static var previews: some View {
-        FileListView(rootDirUrl: URL(dirPathString: "."), selectedUrls: .constant([URL]()), searchOption: SearchOption())
+        FilesContentView(rootDirUrl: URL(dirPathString: "."), selectedUrls: .constant([URL]()), searchOption: SearchOption())
     }
 }

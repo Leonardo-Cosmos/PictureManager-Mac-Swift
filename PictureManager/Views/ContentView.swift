@@ -185,7 +185,7 @@ struct ContentView: View {
     }
     
     @ViewBuilder private func createFileView() -> some View {
-        FileListView(rootDirUrl: selectedDirectoryUrl, selectedUrls: $selectedFileUrls, searchOption: searchOption)
+        FilesContentView(rootDirUrl: selectedDirectoryUrl, selectedUrls: $selectedFileUrls, searchOption: searchOption)
             .frame(minWidth: fileListMinWidth, maxWidth: .infinity, maxHeight: .infinity)
             .onChange(of: selectedFileUrls, perform: { selections in
                 selectedFileUrl = selections.last
