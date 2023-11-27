@@ -43,7 +43,7 @@ struct ContentView: View {
     
     @State private var selectedDirectoryUrl: URL?
     
-    @State private var selectedFileUrls: [URL] = [URL]()
+    @State private var selectedFiles: [FileInfo] = [FileInfo]()
     
     @State private var selectedFileUrl: URL?
     
@@ -111,25 +111,32 @@ struct ContentView: View {
                 createDirTreeView()
             }
         }
-//        .toolbar {
-//            ToolbarItemGroup(placement: .navigation) {
-//                Button(action: {}, label: {
-//                    Image(systemName: "sidebar.left")
-//                })
-//                Spacer()
-//                Button(action: {}, label: {
-//                    Image(systemName: "play.fill")
-//                })
-//                Button(action: {}, label: {
-//                    Image(systemName: "stop.fill")
-//                })
-//            }
-//            ToolbarItem(placement: .confirmationAction) {
-//                Button(action: {}, label: {
-//                    Image(systemName: "sidebar.right")
-//                })
-//            }
-//        }
+        .toolbar {
+            ToolbarItemGroup(placement: .navigation) {
+                Button(action: {}, label: {
+                    Image(systemName: "sidebar.left")
+                })
+                .disabled(true)
+                
+                Spacer()
+                
+                Button(action: {}, label: {
+                    Image(systemName: "chevron.left")
+                })
+                .disabled(true)
+                
+                Button(action: {}, label: {
+                    Image(systemName: "chevron.right")
+                })
+                .disabled(true)
+            }
+            ToolbarItem(placement: .destructiveAction) {
+                Button(action: {}, label: {
+                    Image(systemName: "sidebar.right")
+                })
+                .disabled(true)
+            }
+        }
     }
     
     @ViewBuilder private func createDirTreeView() -> some View {
@@ -185,10 +192,10 @@ struct ContentView: View {
     }
     
     @ViewBuilder private func createFileView() -> some View {
-        FilesContentView(rootDirUrl: selectedDirectoryUrl, selectedUrls: $selectedFileUrls, searchOption: searchOption)
+        FilesContentView(rootDirUrl: selectedDirectoryUrl, selectedFiles: $selectedFiles, searchOption: searchOption)
             .frame(minWidth: fileListMinWidth, maxWidth: .infinity, maxHeight: .infinity)
-            .onChange(of: selectedFileUrls, perform: { selections in
-                selectedFileUrl = selections.last
+            .onChange(of: selectedFiles, perform: { selections in
+                selectedFileUrl = selections.last?.url
             })
     }
     

@@ -17,14 +17,18 @@ struct FilesDetailView: View {
     
     let invalidValue = "--"
     
-    @Binding var fileInfos: [FileInfo]
+    @Binding var dir: DirectoryInfo?
     
     @Binding var selectionSet: Set<UUID>
     
     @Binding var sortOrder: [SortDescriptor<FileInfo>]
     
+    @Binding var refreshState: Bool
+    
+    @Environment(\.SwitchFilesViewDir) private var switchDir: SwitchDirAction
+    
     var body: some View {
-        Table(fileInfos, selection: $selectionSet, sortOrder: $sortOrder) {
+        Table(dir?.files ?? [], selection: $selectionSet, sortOrder: $sortOrder) {
             TableColumn("Name", value: \.name) { file in
                 HStack {
                     FileThumbnailView(thumbnail: file.thumbnail, isDirectory: file is DirectoryInfo)
@@ -34,6 +38,11 @@ struct FilesDetailView: View {
                     if !file.thumbnail.requested {
                         ViewHelper.loadThumbnail(file: file)
                         file.thumbnail.requested = true
+                    }
+                }
+                .onDoubleClick {
+                    if let dir = file as? DirectoryInfo {
+                        switchDir(dir: dir)
                     }
                 }
             }
@@ -57,14 +66,19 @@ struct FilesDetailView: View {
             TableColumn("Date Attribute Modified", value: \.addedToDirectoryDate) { file in
                 Text(file.attributeModificationDate?.formatted() ?? invalidValue)
             }
-        }.onChange(of: sortOrder) { sortOrder in
+        }
+        .onChange(of: sortOrder) { sortOrder in
             print("\(sortOrder)")
         }
+    }
+    
+    func triggerRefresh() {
+        refreshState.toggle()
     }
 }
 
 struct FilesDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        FilesDetailView(fileInfos: .constant([FileInfo]()), selectionSet: .constant(Set<UUID>()), sortOrder: .constant([SortDescriptor<FileInfo>(\.name)]))
+        FilesDetailView(dir: .constant(DirectoryInfo(path: ".")), selectionSet: .constant(Set<UUID>()), sortOrder: .constant([SortDescriptor<FileInfo>(\.name)]), refreshState: .constant(false))
     }
 }

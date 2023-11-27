@@ -20,6 +20,8 @@ class FileInfo: NSObject, Identifiable, ObservableObject {
     
     let url: URL
     
+    let parent: DirectoryInfo?
+    
     let thumbnail = ThumbnailCache()
     
     @Published var permissions: Int16?
@@ -36,12 +38,13 @@ class FileInfo: NSObject, Identifiable, ObservableObject {
     
     @Published var fileSize: Int?
     
-    init(url: URL) {
+    init(url: URL, parent: DirectoryInfo?) {
         self.url = url
+        self.parent = parent
     }
     
-    convenience init(path: String) {
-        self.init(url: URL(fileNotDirPathString: path))
+    convenience init(path: String, parent: DirectoryInfo?) {
+        self.init(url: URL(fileNotDirPathString: path), parent: parent)
     }
     
     @objc var name: String {

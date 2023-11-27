@@ -8,11 +8,26 @@
 import Foundation
 
 class FileCollectionState: ObservableObject {
+    
+    /**
+     The root in those file views displaying directory hierarchy.
+     */
+    var rootDir: DirectoryInfo?
+    
+    /**
+     The directory displayed in files view. It is root directory or sub directory of root.
+     */
+    var currentDir: DirectoryInfo?
+    
+    /**
+    The files on root level.
+     */
+//    @Published var rootFiles = [FileInfo]()
 
     /**
      All files those can be displayed and selected in a files view.
      */
-    @Published var files = [FileInfo]()
+//    @Published var files = [FileInfo]()
 
     /**
      The dictionary of all IDs and corresponding file.
@@ -31,6 +46,12 @@ class FileCollectionState: ObservableObject {
     
     init() {
         
+    }
+    
+    func clear() {
+        selectedIdSet.removeAll()
+        fileIdDict.removeAll()
+        rootDir = nil
     }
     
 }

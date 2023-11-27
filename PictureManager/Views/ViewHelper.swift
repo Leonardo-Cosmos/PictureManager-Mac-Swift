@@ -126,7 +126,7 @@ struct ViewHelper {
         }
     }
     
-    static func loadUrlResourceValues(files: [FileInfo], complete: (() -> Void)? = nil) {
+    static func loadUrlResourceValues(files: [FileInfo], complete: (([FileInfo]) -> Void)? = nil) {
         DispatchQueue.global(qos: .userInitiated).async {
             
             var fileResourceTuples: [(file: FileInfo, resourceValues: URLResourceValues)] = []
@@ -145,7 +145,7 @@ struct ViewHelper {
                 }
                 
                 if let complete = complete {
-                    complete()
+                    complete(files)
                 }
             }
         }

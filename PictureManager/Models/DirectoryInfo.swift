@@ -11,16 +11,18 @@ class DirectoryInfo: FileInfo {
     
     var children: [DirectoryInfo]?
     
-    var error: Error?
+    @Published var files: [FileInfo] = []
     
-    init(url: URL, children: [DirectoryInfo]? = nil) {
-        super.init(url: url)
+    @Published var error: Error?
+    
+    init(url: URL, parent: DirectoryInfo? = nil, children: [DirectoryInfo]? = nil) {
+        super.init(url: url, parent: parent)
         
         self.children = children
     }
     
-    convenience init(path: String, children: [DirectoryInfo]? = nil) {
-        self.init(url: URL(dirPathString: path), children: children)
+    convenience init(path: String, parent: DirectoryInfo? = nil, children: [DirectoryInfo]? = nil) {
+        self.init(url: URL(dirPathString: path), parent: parent, children: children)
     }
     
 }

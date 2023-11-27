@@ -9,8 +9,8 @@ import Foundation
 
 class RegularFileInfo: FileInfo {
     
-    override init(url: URL) {
-        super.init(url: url)
+    override init(url: URL, parent: DirectoryInfo? = nil) {
+        super.init(url: url, parent: parent)
     }
     
     override var resourceKeySet: Set<URLResourceKey> {
