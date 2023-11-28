@@ -22,6 +22,17 @@ class FileInfo: NSObject, Identifiable, ObservableObject {
     
     let parent: DirectoryInfo?
     
+    var ancients: [DirectoryInfo] {
+        var pathDirectories: [DirectoryInfo] = []
+        
+        var parent = parent
+        while (parent != nil) {
+            pathDirectories.append(parent!)
+            parent = parent?.parent
+        }
+        return pathDirectories.reversed()
+    }
+    
     let thumbnail = ThumbnailCache()
     
     @Published var permissions: Int16?

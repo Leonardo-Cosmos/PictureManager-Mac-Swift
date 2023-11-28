@@ -45,14 +45,19 @@ struct FilesContentView: View {
     
     @StateObject private var searchedFilesState = FileCollectionState()
     
-    @State var refreshState = false
+    @State private var refreshState = false
     
     var body: some View {
         let switchDirAction = SwitchDirAction(switchDir)
         
-        VStack {
+        VStack(spacing: 0) {
             FilesDetailView(dir: $filesState.currentDir, selectionSet: $filesState.selectedIdSet, sortOrder: $filesState.sortOrder, refreshState: $refreshState)
                 .navigationTitle(filesState.currentDir?.url.lastPathComponent ?? "")
+                .environment(\.SwitchFilesViewDir, switchDirAction)
+            
+            Divider()
+            
+            PathBar(directory: $filesState.currentDir)
                 .environment(\.SwitchFilesViewDir, switchDirAction)
         }
         .onChange(of: rootDirUrl, perform: loadRootDir)
@@ -61,7 +66,7 @@ struct FilesContentView: View {
         }
         .onChange(of: filesState.sortOrder) { _ in
             sortFiles(dir: filesState.currentDir, state: filesState)
-            refreshFilesView()
+            refresh()
         }
         .onCutCommand(perform: cutSelectedUrls)
         .onCopyCommand(perform: copySelectedUrls)
@@ -104,6 +109,7 @@ struct FilesContentView: View {
                 .disabled(filesState.currentDir == filesState.rootDir)
             }
         }
+        
 //        if isSearching {
 //            FilesDetailView(fileInfos: $searchedFilesState.rootDir.files, selectionSet: $searchedFilesState.selectedIdSet, sortOrder: $searchedFilesState.sortOrder)
 //                .navigationTitle("Searching \(rootDirUrl?.lastPathComponent ?? "")")
@@ -124,8 +130,9 @@ struct FilesContentView: View {
 //        }
     }
     
-    private func refreshFilesView() {
-        refreshState.toggle()
+    private func refresh() {
+//        refreshState.toggle()
+        filesState.objectWillChange.send()
     }
     
     private func loadRootDir(dirUrl: URL?) {
@@ -150,15 +157,36 @@ struct FilesContentView: View {
 
         Self.logger.debug("List files of directory \(dir.url.purePath)")
 
-        var filePaths: [String]
+        var loadedFilePaths: [String]
         do {
-            filePaths = try FileSystemManager.default.filesOfDirectory(dirPath: dir.url.purePath)
+            loadedFilePaths = try FileSystemManager.default.filesOfDirectory(dirPath: dir.url.purePath)
         } catch let error as NSError {
             Self.logger.error("Cannot list files. \(error)")
             return
         }
+        
+        
+        let loadedFilePathSet = Set(loadedFilePaths)
+        
+        let existingFilePaths = dir.files.map { file in
+            if file is DirectoryInfo && file.url.purePath.last == "/" {
+                var path = file.url.purePath
+                path.removeLast()
+                return path
+            } else {
+                return file.url.purePath
+            }
+        }
+        let existingFilePathSet = Set(existingFilePaths)
+        
+        let addedFilePathSet = loadedFilePathSet.subtracting(existingFilePathSet)
+        let removedFilePathSet = existingFilePathSet.subtracting(loadedFilePathSet)
+        
+        dir.files.removeAll(where: { file in removedFilePathSet.contains(file.url.purePath) })
+        
+        let addedFilePaths = [String](addedFilePathSet)
 
-        addFiles(filePaths: filePaths, dir: dir, state: state)
+        addFiles(filePaths: addedFilePaths, dir: dir, state: state)
     }
     
     private func addFiles(filePaths: [String], dir: DirectoryInfo, state: FileCollectionState) {
@@ -196,7 +224,7 @@ struct FilesContentView: View {
             Self.logger.debug("Added file count: \(addedFiles.count), total file count: \(dir.files.count)")
             
             sortFiles(dir: dir, state: state)
-            refreshFilesView()
+            refresh()
         })
     }
     
@@ -215,17 +243,19 @@ struct FilesContentView: View {
         let newSelectedFileSet = Set(newSelectedFiles)
         let oldSelectedFileSet = Set(selectedFiles)
         
-        let removedFiles = oldSelectedFileSet.subtracting(newSelectedFileSet)
-        let addedFiles = newSelectedFileSet.subtracting(oldSelectedFileSet)
+        let removedFileSet = oldSelectedFileSet.subtracting(newSelectedFileSet)
+        let addedFileSet = newSelectedFileSet.subtracting(oldSelectedFileSet)
         
-        selectedFiles.removeAll { url in removedFiles.contains(url) }
-        selectedFiles.append(contentsOf: addedFiles)
+        selectedFiles.removeAll { url in removedFileSet.contains(url) }
+        selectedFiles.append(contentsOf: addedFileSet)
     }
     
     private func switchDir(dir: DirectoryInfo?) {
         guard let dir = dir else {
             return
         }
+        
+        print("Switch to \(dir.url.purePath), main thread: \(Thread.isMainThread)")
         
         filesState.currentDir = dir
         loadFiles(dir: dir, state: filesState)
