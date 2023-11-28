@@ -219,13 +219,12 @@ struct FilesContentView: View {
             addedFiles.append(file)
         }
         
-        ViewHelper.loadUrlResourceValues(files: addedFiles, complete: { files in
-            dir.files.append(contentsOf: files)
-            Self.logger.debug("Added file count: \(addedFiles.count), total file count: \(dir.files.count)")
-            
-            sortFiles(dir: dir, state: state)
-            refresh()
-        })
+        ViewHelper.loadUrlResourceValues(files: addedFiles)
+        
+        dir.files.append(contentsOf: addedFiles)
+        Self.logger.debug("Added file count: \(addedFiles.count), total file count: \(dir.files.count)")
+        
+        sortFiles(dir: dir, state: state)
     }
     
     private func sortFiles(dir: DirectoryInfo?, state: FileCollectionState) {
@@ -255,10 +254,14 @@ struct FilesContentView: View {
             return
         }
         
-        print("Switch to \(dir.url.purePath), main thread: \(Thread.isMainThread)")
-        
-        filesState.currentDir = dir
-        loadFiles(dir: dir, state: filesState)
+        DispatchQueue.global(qos: .userInitiated).async {
+            loadFiles(dir: dir, state: filesState)
+            
+            DispatchQueue.main.async {
+                filesState.currentDir = dir
+                refresh()
+            }
+        }
     }
     
     private func cutSelectedUrls() -> [NSItemProvider] {

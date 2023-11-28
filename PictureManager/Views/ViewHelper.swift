@@ -111,7 +111,7 @@ struct ViewHelper {
         let generator = QLThumbnailGenerator.shared
         generator.generateRepresentations(for: request) { (thumbnail, type, error) in
             if let error = error {
-                Self.logger.error("Cannot generate thumbnail, path: \(url.purePath), type: \(type.rawValue), \(error)")
+//                Self.logger.error("Cannot generate thumbnail, path: \(url.purePath), type: \(type.rawValue), \(error)")
                 return
             }
             
@@ -126,7 +126,18 @@ struct ViewHelper {
         }
     }
     
-    static func loadUrlResourceValues(files: [FileInfo], complete: (([FileInfo]) -> Void)? = nil) {
+    static func loadUrlResourceValues(files: [FileInfo]) {
+        for file in files {
+            do {
+                let resourceValues = try file.url.resourceValues(forKeys: file.resourceKeySet)
+                file.populateResourceValues(resourceValues)
+            } catch let err {
+                Self.logger.error("Cannot retrieve URL resource values, path: \(file.url.purePath), \(err)")
+            }
+        }
+    }
+    
+    static func loadUrlResourceValuesAsync(files: [FileInfo], complete: (([FileInfo]) -> Void)? = nil) {
         DispatchQueue.global(qos: .userInitiated).async {
             
             var fileResourceTuples: [(file: FileInfo, resourceValues: URLResourceValues)] = []
