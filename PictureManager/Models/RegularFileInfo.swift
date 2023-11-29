@@ -27,4 +27,9 @@ class RegularFileInfo: FileInfo {
         fileSize = resourceValues.fileSize
     }
     
+    override func populateResourceValues(_ resourceValues: URL.SendableResourceValues) {
+        super.populateResourceValues(resourceValues)
+        fileSize = resourceValues.fileSize
+    }
+    
 }

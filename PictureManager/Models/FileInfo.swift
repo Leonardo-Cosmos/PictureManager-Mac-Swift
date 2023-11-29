@@ -97,4 +97,12 @@ class FileInfo: NSObject, Identifiable, ObservableObject {
         attributeModificationDate = resourceValues.attributeModificationDate
     }
     
+    func populateResourceValues(_ resourceValues: URL.SendableResourceValues) {
+        creationDate = resourceValues.creationDate
+        contentModificationDate = resourceValues.contentModificationDate
+        contentAccessDate = resourceValues.contentAccessDate
+        addedToDirectoryDate = resourceValues.addedToDirectoryDate
+        attributeModificationDate = resourceValues.attributeModificationDate
+    }
+    
 }

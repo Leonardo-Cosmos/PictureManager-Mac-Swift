@@ -54,4 +54,29 @@ extension URL {
         }
     }
     
+    func sendableResourceValues(forKeys resourceKeySet: Set<URLResourceKey>) throws -> SendableResourceValues {
+        let resourceValues = try resourceValues(forKeys: resourceKeySet)
+        return SendableResourceValues(resourceValues)
+    }
+    
+    struct SendableResourceValues: Sendable {
+        
+        let creationDate: Date?
+        let contentModificationDate: Date?
+        let contentAccessDate: Date?
+        let addedToDirectoryDate: Date?
+        let attributeModificationDate: Date?
+        let fileSize: Int?
+        
+        init(_ resourceValues: URLResourceValues) {
+            creationDate = resourceValues.creationDate
+            contentModificationDate = resourceValues.contentModificationDate
+            contentAccessDate = resourceValues.contentAccessDate
+            addedToDirectoryDate = resourceValues.addedToDirectoryDate
+            attributeModificationDate = resourceValues.attributeModificationDate
+            fileSize = resourceValues.fileSize
+        }
+        
+    }
+    
 }

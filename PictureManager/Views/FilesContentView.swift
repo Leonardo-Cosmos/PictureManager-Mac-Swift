@@ -60,7 +60,11 @@ struct FilesContentView: View {
             PathBar(directory: $filesState.currentDir)
                 .environment(\.SwitchFilesViewDir, switchDirAction)
         }
-        .onChange(of: rootDirUrl, perform: loadRootDir)
+        .onChange(of: rootDirUrl) { dirUrl in
+            Task {
+                await loadRootDir(dirUrl: dirUrl)
+            }
+        }
         .onChange(of: filesState.selectedIdSet) { _ in
             updateSelectedFiles()
         }
@@ -86,12 +90,11 @@ struct FilesContentView: View {
                             try FileSystemManager.default.copyFile(filePath.lastComponent!.string, from: filePath.removingLastComponent().string, to: rootDirUrl!.purePath)
                             
                             // TODO: add pasted file together.
-                            DispatchQueue.main.async {
-                                if let currentDir = filesState.currentDir {
-                                    addFiles(filePaths: [path], dir: currentDir, state: filesState)
+                            if let currentDir = filesState.currentDir {
+                                Task {
+                                    await addFiles(filePaths: [path], dir: currentDir, state: filesState)
                                 }
                             }
-                            
                         } catch let error {
                             Self.logger.error("Cannot paste file, \(error.localizedDescription)")
                         }
@@ -102,7 +105,9 @@ struct FilesContentView: View {
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button(action: {
-                    switchDir(dir: filesState.currentDir?.parent)
+                    Task {
+                        await switchDir(dir: filesState.currentDir?.parent)
+                    }
                 }, label: {
                     Image(systemName: "chevron.up")
                 })
@@ -135,7 +140,7 @@ struct FilesContentView: View {
         filesState.objectWillChange.send()
     }
     
-    private func loadRootDir(dirUrl: URL?) {
+    private func loadRootDir(dirUrl: URL?) async {
         filesState.clear()
         searchedFilesState.clear()
         
@@ -143,28 +148,45 @@ struct FilesContentView: View {
             return
         }
         
-        if sortBy == .name {
-            filesState.sortOrder.append(SortDescriptor<FileInfo>(\.name))
+        if filesState.sortOrder.isEmpty {
+            if sortBy == .name {
+                filesState.sortOrder.append(SortDescriptor<FileInfo>(\.name))
+            }
         }
         
         let rootDir = DirectoryInfo(url: dirUrl, parent: nil)
+        await loadFilesOfDirectory(dir: rootDir, state: filesState)
         filesState.rootDir = rootDir
         filesState.currentDir = rootDir
-        loadFiles(dir: rootDir, state: filesState)
+        
+        refresh()
+    }
+    
+    private func switchDir(dir: DirectoryInfo?) async {
+        guard let dir = dir else {
+            return
+        }
+        
+        await loadFilesOfDirectory(dir: dir, state: filesState)
+        filesState.currentDir = dir
+        refresh()
     }
 
-    private func loadFiles(dir: DirectoryInfo, state: FileCollectionState) {
+    private func loadFilesOfDirectory(dir: DirectoryInfo, state: FileCollectionState) async {
 
         Self.logger.debug("List files of directory \(dir.url.purePath)")
-
+        
+        let loadFilesResult = await Task(priority: .userInitiated) { () throws -> [String] in
+            return try FileSystemManager.default.filesOfDirectory(dirPath: dir.url.purePath)
+        }.result
+        
         var loadedFilePaths: [String]
         do {
-            loadedFilePaths = try FileSystemManager.default.filesOfDirectory(dirPath: dir.url.purePath)
+            loadedFilePaths = try loadFilesResult.get()
         } catch let error as NSError {
             Self.logger.error("Cannot list files. \(error)")
             return
         }
-        
         
         let loadedFilePathSet = Set(loadedFilePaths)
         
@@ -186,10 +208,10 @@ struct FilesContentView: View {
         
         let addedFilePaths = [String](addedFilePathSet)
 
-        addFiles(filePaths: addedFilePaths, dir: dir, state: state)
+        await addFiles(filePaths: addedFilePaths, dir: dir, state: state)
     }
     
-    private func addFiles(filePaths: [String], dir: DirectoryInfo, state: FileCollectionState) {
+    private func addFiles(filePaths: [String], dir: DirectoryInfo, state: FileCollectionState) async {
                         
         var addedFiles: [FileInfo] = []
         var file: FileInfo
@@ -219,7 +241,7 @@ struct FilesContentView: View {
             addedFiles.append(file)
         }
         
-        ViewHelper.loadUrlResourceValues(files: addedFiles)
+        await ViewHelper.loadUrlResourceValues(files: addedFiles)
         
         dir.files.append(contentsOf: addedFiles)
         Self.logger.debug("Added file count: \(addedFiles.count), total file count: \(dir.files.count)")
@@ -247,21 +269,6 @@ struct FilesContentView: View {
         
         selectedFiles.removeAll { url in removedFileSet.contains(url) }
         selectedFiles.append(contentsOf: addedFileSet)
-    }
-    
-    private func switchDir(dir: DirectoryInfo?) {
-        guard let dir = dir else {
-            return
-        }
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            loadFiles(dir: dir, state: filesState)
-            
-            DispatchQueue.main.async {
-                filesState.currentDir = dir
-                refresh()
-            }
-        }
     }
     
     private func cutSelectedUrls() -> [NSItemProvider] {
@@ -306,14 +313,16 @@ struct FilesContentView: View {
 
 struct SwitchDirAction {
     
-    var switchAction: (DirectoryInfo) -> Void
+    var switchAction: (DirectoryInfo) async -> Void
     
-    init(_ switchAction: @escaping (DirectoryInfo) -> Void) {
+    init(_ switchAction: @escaping (DirectoryInfo) async -> Void) {
         self.switchAction = switchAction
     }
     
     func callAsFunction(dir: DirectoryInfo) {
-        switchAction(dir)
+        Task {
+            await switchAction(dir)
+        }
     }
 }
 

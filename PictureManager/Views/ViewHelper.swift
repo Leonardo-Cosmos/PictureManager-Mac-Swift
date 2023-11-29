@@ -126,18 +126,30 @@ struct ViewHelper {
         }
     }
     
-    static func loadUrlResourceValues(files: [FileInfo]) {
-        for file in files {
-            do {
-                let resourceValues = try file.url.resourceValues(forKeys: file.resourceKeySet)
-                file.populateResourceValues(resourceValues)
-            } catch let err {
-                Self.logger.error("Cannot retrieve URL resource values, path: \(file.url.purePath), \(err)")
+    static func loadUrlResourceValues(files: [FileInfo]) async {
+        let result = await Task(priority: .userInitiated) {
+            var fileResourceTuples: [(file: FileInfo, resourceValues: URL.SendableResourceValues)] = []
+            for file in files {
+                do {
+                    let resourceValues = try file.url.sendableResourceValues(forKeys: file.resourceKeySet)
+                    fileResourceTuples.append((file, resourceValues))
+                } catch let err {
+                    Self.logger.error("Cannot retrieve URL resource values, path: \(file.url.purePath), \(err)")
+                }
+            }
+            return fileResourceTuples
+        }.result
+        
+        let fileResourceTuples = try! result.get()
+        
+        await MainActor.run {
+            for fileResourceTuple in fileResourceTuples {
+                fileResourceTuple.file.populateResourceValues(fileResourceTuple.resourceValues)
             }
         }
     }
     
-    static func loadUrlResourceValuesAsync(files: [FileInfo], complete: (([FileInfo]) -> Void)? = nil) {
+    static func loadUrlResourceValues(files: [FileInfo], complete: (([FileInfo]) -> Void)? = nil) {
         DispatchQueue.global(qos: .userInitiated).async {
             
             var fileResourceTuples: [(file: FileInfo, resourceValues: URLResourceValues)] = []
