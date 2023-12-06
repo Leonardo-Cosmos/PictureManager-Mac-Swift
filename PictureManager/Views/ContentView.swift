@@ -49,10 +49,16 @@ struct ContentView: View {
     
     @State private var searchText: String = ""
     
-    @StateObject private var searchOption = SearchOption()
-    
     @AppStorage("FilesView.searchScope")
     private var searchScope: SearchFileScope = .currentDir
+    
+    @AppStorage("FilesView.searchMatchingTarget")
+    private var searchFileMatchingTarget: SearchFileMatchingTarget = .name
+    
+    @AppStorage("FilesView.searchMatchingMethod")
+    private var searchFileMatchingMethod: SearchFileMatchingMethod = .substring
+    
+    @StateObject private var searchOption = SearchOption()
     
 //    @AppStorage
     private var searchedOptions: [SearchedOption] = []
@@ -73,9 +79,12 @@ struct ContentView: View {
                 createFileView()
                     .searchable(text: $searchText)
                     .searchScopes($searchScope) {
-                        Text("Current Folder Only").tag(SearchFileScope.currentDir)
-                        Text("Current Folder Recursively").tag(SearchFileScope.currentDirRecursively)
-                        Text("Root Folder Recursively").tag(SearchFileScope.rootDirRecursively)
+                        ForEach(SearchFileScope.allCases) { scope in
+                            Text(scope.description).tag(scope)
+                        }
+//                        Text("Current Folder Only").tag(SearchFileScope.currentDir)
+//                        Text("Current Folder Recursively").tag(SearchFileScope.currentDirRecursively)
+//                        Text("Root Folder Recursively").tag(SearchFileScope.rootDirRecursively)
                     }
                     .searchSuggestions {
                             ForEach(searchedOptions) { searchedOption in
@@ -84,20 +93,19 @@ struct ContentView: View {
                             }
                     }
                     .onChange(of: searchScope) { scope in
-                        if !searchText.isEmpty {
                             searchOption.scope = scope
-                        }
                     }
                     .onSubmit(of: .search) {
-                        if !searchText.isEmpty {
-                            searchOption.pattern = searchText
-                        }
+                        searchOption.matcher = createSearchMatcher(searchText, matchingTarget: searchFileMatchingTarget, matchingMethod: searchFileMatchingMethod)
+                        searchOption.refresh()
                     }
             } else {
+                // For MacOS 13.0-
                 createFileView()
                     .searchable(text: $searchText)
                     .onSubmit(of: .search) {
-                        searchOption.pattern = searchText
+                        searchOption.matcher = createSearchMatcher(searchText, matchingTarget: searchFileMatchingTarget, matchingMethod: searchFileMatchingMethod)
+                        searchOption.refresh()
                     }
             }
             
@@ -241,6 +249,23 @@ struct ContentView: View {
         } else if fileDetailWidth > fileDetailMaxWidth {
             fileDetailWidth = fileDetailMaxWidth
         }
+    }
+    
+    private func createSearchMatcher(_ pattern: String, matchingTarget: SearchFileMatchingTarget, matchingMethod: SearchFileMatchingMethod) -> (any FileInfoMatcher)? {
+        if !pattern.isEmpty {
+            Self.logger.info("Searching pattern: \(pattern), of: \(matchingTarget.rawValue), by: \(matchingMethod.rawValue), in: \(searchOption.scope.rawValue)")
+            
+            do {
+                let urlMatcher = try UrlPatternMatcher(pattern: pattern, matchingTarget: matchingTarget, matchingMethod: matchingMethod)
+                
+                return FileInfoUrlMatcher(urlMatcher: urlMatcher)
+                
+            } catch let err {
+                Self.logger.error("Cannot create file matcher, \(err)")
+            }
+        }
+        
+        return nil
     }
 }
 

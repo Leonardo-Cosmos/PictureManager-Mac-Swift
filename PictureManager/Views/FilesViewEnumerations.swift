@@ -47,6 +47,19 @@ enum SearchFileScope: String, CaseIterable, Identifiable {
     var id: SearchFileScope {
         return self
     }
+    
+    var description: String {
+        var text: String
+        switch self {
+        case .currentDir:
+            text = "Current Folder Only"
+        case .currentDirRecursively:
+            text = "Current Folder Recursively"
+        case .rootDirRecursively:
+            text = "Root Folder Recursively"
+        }
+        return text
+    }
 }
 
 enum SearchFileMatchingMethod: String, CaseIterable, Identifiable {

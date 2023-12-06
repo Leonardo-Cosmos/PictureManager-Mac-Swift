@@ -17,6 +17,8 @@ struct FilesContentView: View {
         category: String(describing: Self.self)
     )
     
+    typealias FileMatcher = (FileInfo) -> Bool
+    
     /**
      Root directory is the one selected in directory tree view and is the root in those file views displaying directory hierarchy.
      */
@@ -41,7 +43,7 @@ struct FilesContentView: View {
     @StateObject private var filesState = FileCollectionState()
     
     @Environment(\.isSearching)
-    private var isSearching
+    private var isSearching: Bool
     
     @StateObject private var searchedFilesState = FileCollectionState()
     
@@ -51,9 +53,7 @@ struct FilesContentView: View {
         let switchDirAction = SwitchDirAction(switchDir)
         
         VStack(spacing: 0) {
-            FilesDetailView(dir: $filesState.currentDir, selectionSet: $filesState.selectedIdSet, sortOrder: $filesState.sortOrder, refreshState: $refreshState)
-                .navigationTitle(filesState.currentDir?.url.lastPathComponent ?? "")
-                .environment(\.SwitchFilesViewDir, switchDirAction)
+            createFilesView(switchDirAction: switchDirAction)
             
             Divider()
             
@@ -74,34 +74,7 @@ struct FilesContentView: View {
         }
         .onCutCommand(perform: cutSelectedUrls)
         .onCopyCommand(perform: copySelectedUrls)
-        .onPasteCommand(of: [UTType.fileListPath.identifier], validator: { providers in
-            guard rootDirUrl != nil else {
-                return nil
-            }
-            return providers
-        }, perform: { (providers: [NSItemProvider]) in
-            for provider in providers {
-                ViewHelper.pathFromNSItemProvider(provider) { (path, error) in
-                    if let error = error {
-                        Self.logger.error("Cannot load pasted path, \(error.localizedDescription)")
-                    } else  if let path = path {
-                        do {
-                            let filePath = FilePath(path)
-                            try FileSystemManager.default.copyFile(filePath.lastComponent!.string, from: filePath.removingLastComponent().string, to: rootDirUrl!.purePath)
-                            
-                            // TODO: add pasted file together.
-                            if let currentDir = filesState.currentDir {
-                                Task {
-                                    await addFiles(filePaths: [path], dir: currentDir, state: filesState)
-                                }
-                            }
-                        } catch let error {
-                            Self.logger.error("Cannot paste file, \(error.localizedDescription)")
-                        }
-                    }
-                }
-            }
-        })
+        .onPasteCommand(of: [UTType.fileListPath.identifier], validator: validatePastedUrls, perform: pasteUrls)
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button(action: {
@@ -133,6 +106,22 @@ struct FilesContentView: View {
             
                 
 //        }
+    }
+    
+    @ViewBuilder private func createFilesView(switchDirAction: SwitchDirAction) -> some View {
+        FilesDetailView(dir: $filesState.currentDir, selectionSet: $filesState.selectedIdSet, sortOrder: $filesState.sortOrder, refreshState: $refreshState)
+            .onChange(of: isSearching) { isSearching in
+//                if isSearching {
+//                    searchFiles()
+//                } else {
+//                    dismissSearchFiles()
+//                }
+            }
+            .onChange(of: searchOption.refreshState) { _ in
+                searchFiles()
+            }
+            .navigationTitle(filesState.currentDir?.url.lastPathComponent ?? "")
+            .environment(\.SwitchFilesViewDir, switchDirAction)
     }
     
     private func refresh() {
@@ -172,7 +161,7 @@ struct FilesContentView: View {
         refresh()
     }
 
-    private func loadFilesOfDirectory(dir: DirectoryInfo, state: FileCollectionState) async {
+    private func loadFilesOfDirectory(dir: DirectoryInfo, state: FileCollectionState, fileMatcher: FileMatcher? = nil) async {
 
         Self.logger.debug("List files of directory \(dir.url.purePath)")
         
@@ -204,14 +193,17 @@ struct FilesContentView: View {
         let addedFilePathSet = loadedFilePathSet.subtracting(existingFilePathSet)
         let removedFilePathSet = existingFilePathSet.subtracting(loadedFilePathSet)
         
+        let removedFiles = dir.files.filter({ file in removedFilePathSet.contains(file.url.purePath) })
+        for removedFile in removedFiles {
+            filesState.removeFile(id: removedFile.id)
+        }
         dir.files.removeAll(where: { file in removedFilePathSet.contains(file.url.purePath) })
         
         let addedFilePaths = [String](addedFilePathSet)
-
-        await addFiles(filePaths: addedFilePaths, dir: dir, state: state)
+        await addFiles(filePaths: addedFilePaths, dir: dir, state: state, fileMatcher: fileMatcher)
     }
     
-    private func addFiles(filePaths: [String], dir: DirectoryInfo, state: FileCollectionState) async {
+    private func addFiles(filePaths: [String], dir: DirectoryInfo, state: FileCollectionState, fileMatcher: FileMatcher? = nil) async {
                         
         var addedFiles: [FileInfo] = []
         var file: FileInfo
@@ -237,14 +229,33 @@ struct FilesContentView: View {
             
             file.permissions = FileSystemManager.posixPermissions(attributes: fileAttributes)
             
-            state.fileIdDict[file.id] = file
             addedFiles.append(file)
         }
         
         await ViewHelper.loadUrlResourceValues(files: addedFiles)
         
+        var removedFiles: [FileInfo] = []
+        if let fileMatcher = fileMatcher {
+            addedFiles = addedFiles.filter({ file in fileMatcher(file) })
+            removedFiles = dir.files.filter({ file in !fileMatcher(file) })
+        }
+        
+        if !removedFiles.isEmpty {
+            var removedFileIdSet = Set<UUID>()
+            
+            for removedFile in removedFiles {
+                state.removeFile(id: removedFile.id)
+                removedFileIdSet.insert(removedFile.id)
+            }
+            dir.files.removeAll(where: { file in removedFileIdSet.contains(file.id) })
+        }
+        
         dir.files.append(contentsOf: addedFiles)
-        Self.logger.debug("Added file count: \(addedFiles.count), total file count: \(dir.files.count)")
+        for addedFile in addedFiles {
+            state.addFile(addedFile)
+        }
+        
+        Self.logger.debug("Total: \(dir.files.count), added: \(addedFiles.count), removed: \(removedFiles.count)")
         
         sortFiles(dir: dir, state: state)
     }
@@ -283,31 +294,65 @@ struct FilesContentView: View {
         return providers
     }
     
+    private func validatePastedUrls(providers: [NSItemProvider]) -> [NSItemProvider]? {
+        guard rootDirUrl != nil else {
+            return nil
+        }
+        return providers
+    }
+    
+    private func pasteUrls(providers: [NSItemProvider]) {
+        for provider in providers {
+            ViewHelper.pathFromNSItemProvider(provider) { (path, error) in
+                if let error = error {
+                    Self.logger.error("Cannot load pasted path, \(error.localizedDescription)")
+                } else  if let path = path {
+                    do {
+                        let filePath = FilePath(path)
+                        try FileSystemManager.default.copyFile(filePath.lastComponent!.string, from: filePath.removingLastComponent().string, to: rootDirUrl!.purePath)
+                        
+                        // TODO: add pasted file together.
+                        if let currentDir = filesState.currentDir {
+                            Task {
+                                await addFiles(filePaths: [path], dir: currentDir, state: filesState)
+                            }
+                        }
+                    } catch let error {
+                        Self.logger.error("Cannot paste file, \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+    }
+    
     private func searchFiles() {
-        Self.logger.info("Searching pattern: \(searchOption.pattern), in: \(searchOption.scope.rawValue), of: \(searchOption.matchingTarget.rawValue), by: \(searchOption.matchingMethod.rawValue)")
-        
-        searchedFilesState.clear()
-        
-        let recursive = searchOption.scope == .currentDirRecursively || searchOption.scope == .rootDirRecursively
-        
-//        if let rootDirUrl = rootDirUrl {
-//            FileUrlProvider.default.listDirectory(dirUrl: rootDirUrl, options: FileUrlProvider.ListDirectoryOption(fileType: .all, recursive: recursive,
-//                update: { urls in
-//                    let paths = urls.map { $0.purePath }
-//                    DispatchQueue.main.async {
-//                        addFiles(filePaths: paths, isSearched: true)
-//                    }
-//                },
-//                complete: { (_, error) in
-//                    if let error = error {
-//                        Self.logger.error("Search file error: \(error)")
-//                    }
-//                },
-//                match: { url in
-//                    return url.lastPathComponent.contains(searchOption.pattern)
-//                }
-//            ))
-//        }
+        if let currentDir = filesState.currentDir {
+            let recursive = searchOption.scope == .currentDirRecursively || searchOption.scope == .rootDirRecursively
+            if recursive {
+                Task {
+                    await loadFilesOfDirectory(dir: currentDir, state: filesState)
+                }
+            } else {
+                Task {
+                    if let fileInfoMatcher = searchOption.matcher {
+                        await loadFilesOfDirectory(dir: currentDir, state: filesState, fileMatcher: { file in
+                            fileInfoMatcher.match(file: file)
+                        })
+                    } else {
+                        await loadFilesOfDirectory(dir: currentDir, state: filesState)
+                    }
+                    refresh()
+                }
+            }
+        }
+    }
+    
+    private func dismissSearchFiles() {
+        if let currentDir = filesState.currentDir {
+            Task {
+                await loadFilesOfDirectory(dir: currentDir, state: filesState)
+            }
+        }
     }
 }
 

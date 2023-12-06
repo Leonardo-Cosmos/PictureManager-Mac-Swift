@@ -54,21 +54,59 @@ class FileCollectionState: ObservableObject {
         rootDir = nil
     }
     
-}
-
-class SearchOption: ObservableObject, Equatable {
-    
-    static func == (lhs: SearchOption, rhs: SearchOption) -> Bool {
-        lhs.pattern == rhs.pattern && lhs.scope == rhs.scope && lhs.matchingTarget == rhs.matchingTarget && lhs.matchingMethod == rhs.matchingMethod
+    func addFile(_ file: FileInfo) {
+        fileIdDict[file.id] = file
     }
     
-    @Published var pattern: String = ""
+    func removeFile(id fileId: UUID) {
+        selectedIdSet.remove(fileId)
+        
+        if let index = fileIdDict.index(forKey: fileId) {
+            fileIdDict.remove(at: index)
+        }
+    }
+    
+}
+
+class SearchOption: ObservableObject {
+    
+//    static func == (lhs: SearchOption, rhs: SearchOption) -> Bool {
+        
+        // lhs.scope == rhs.scope && lhs.matchingTarget == rhs.matchingTarget && lhs.matchingMethod == rhs.matchingMethod && lhs.
+        
+//        if lhs.scope != rhs.scope {
+//            return false
+//        }
+//
+//        if lhs.matcher == nil && rhs.matcher == nil {
+//            return true
+//        } else if lhs.matcher == nil || rhs.matcher == nil {
+//            return false
+//        }
+//
+//        if let lMatcher = lhs.matcher as? FileInfoUrlMatcher, let rMatcher = rhs.matcher as? FileInfoUrlMatcher {
+//            return lMatcher == rMatcher
+//        }
+//
+//        return false
+//    }
     
     @Published var scope: SearchFileScope = .currentDirRecursively
     
-    @Published var matchingTarget: SearchFileMatchingTarget = .name
+//    @Published var pattern: String = ""
+//
+//    @Published var matchingTarget: SearchFileMatchingTarget = .name
+//
+//    @Published var matchingMethod: SearchFileMatchingMethod = .substring
     
-    @Published var matchingMethod: SearchFileMatchingMethod = .substring
+    @Published var refreshState = false
+    
+    @Published var matcher: (any FileInfoMatcher)? = nil
+    
+    func refresh() {
+        refreshState.toggle()
+    }
+    
 }
 
 struct SearchedOption: Identifiable {
