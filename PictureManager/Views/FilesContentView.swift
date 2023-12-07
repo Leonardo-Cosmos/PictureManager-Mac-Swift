@@ -307,18 +307,19 @@ struct FilesContentView: View {
                 if let error = error {
                     Self.logger.error("Cannot load pasted path, \(error.localizedDescription)")
                 } else  if let path = path {
-                    do {
-                        let filePath = FilePath(path)
-                        try FileSystemManager.default.copyFile(filePath.lastComponent!.string, from: filePath.removingLastComponent().string, to: rootDirUrl!.purePath)
-                        
-                        // TODO: add pasted file together.
-                        if let currentDir = filesState.currentDir {
-                            Task {
-                                await addFiles(filePaths: [path], dir: currentDir, state: filesState)
+                    // TODO: add pasted file together.
+                    if let currentDir = filesState.currentDir {
+                        Task {
+                            do {
+                                let filePath = FilePath(path)
+                                try FileSystemManager.default.copyFile(filePath.lastComponent!.string, from: filePath.removingLastComponent().string, to: currentDir.url.purePath)
+                                
+                            } catch let error {
+                                Self.logger.error("Cannot paste file, \(error.localizedDescription)")
                             }
+                            
+                            await addFiles(filePaths: [path], dir: currentDir, state: filesState)
                         }
-                    } catch let error {
-                        Self.logger.error("Cannot paste file, \(error.localizedDescription)")
                     }
                 }
             }

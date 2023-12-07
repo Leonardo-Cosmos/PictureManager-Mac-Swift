@@ -145,6 +145,11 @@ struct ContentView: View {
                 .disabled(true)
             }
         }
+        .onAppear(perform: initialize)
+    }
+    
+    private func initialize() {
+        searchOption.scope = searchScope
     }
     
     @ViewBuilder private func createDirTreeView() -> some View {

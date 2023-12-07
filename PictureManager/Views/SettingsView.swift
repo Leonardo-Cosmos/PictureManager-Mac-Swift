@@ -38,26 +38,26 @@ struct SettingsView: View {
     
     var body: some View {
         TabView {
-//            Form {
-//                Toggle(isOn: $dirTreeOnRight) {
-//                    Text("Directory tree on right side")
-//                }
-//                .toggleStyle(.checkbox)
-//                .padding([.leading, .trailing, .top])
-//
-//                Toggle(isOn: $fileDetailOnLeft) {
-//                    Text("File detail on left side")
-//                }
-//                .toggleStyle(.checkbox)
-//                .padding([.leading, .trailing, .top, .bottom])
-//            }
-//            .tabItem {
-//                Label("Sidebar", systemImage: "sidebar.leading")
-//            }
-//            .onAppear {
-//                viewWidth = Self.sidebarViewWidth
-//                viewHeight = Self.sidebarViewHeight
-//            }
+            Form {
+                Toggle(isOn: $dirTreeOnRight) {
+                    Text("Directory tree on right side")
+                }
+                .toggleStyle(.checkbox)
+                .padding([.leading, .trailing, .top])
+
+                Toggle(isOn: $fileDetailOnLeft) {
+                    Text("File detail on left side")
+                }
+                .toggleStyle(.checkbox)
+                .padding([.leading, .trailing, .top, .bottom])
+            }
+            .tabItem {
+                Label("Sidebar", systemImage: "sidebar.leading")
+            }
+            .onAppear {
+                viewWidth = Self.sidebarViewWidth
+                viewHeight = Self.sidebarViewHeight
+            }
             
             Form {
                 List {
