@@ -60,11 +60,7 @@ struct FilesContentView: View {
             PathBar(directory: $filesState.currentDir)
                 .environment(\.SwitchFilesViewDir, switchDirAction)
         }
-        .onChange(of: rootDirUrl) { dirUrl in
-            Task {
-                await loadRootDir(dirUrl: dirUrl)
-            }
-        }
+        .onChange(of: rootDirUrl, perform: loadRootDir)
         .onChange(of: filesState.selectedIdSet) { _ in
             updateSelectedFiles()
         }
@@ -78,44 +74,23 @@ struct FilesContentView: View {
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button(action: {
-                    Task {
-                        await switchDir(dir: filesState.currentDir?.parent)
-                    }
+                    switchDir(dir: filesState.currentDir?.parent)
                 }, label: {
                     Image(systemName: "chevron.up")
                 })
                 .disabled(filesState.currentDir == filesState.rootDir)
             }
         }
-        
-//        if isSearching {
-//            FilesDetailView(fileInfos: $searchedFilesState.rootDir.files, selectionSet: $searchedFilesState.selectedIdSet, sortOrder: $searchedFilesState.sortOrder)
-//                .navigationTitle("Searching \(rootDirUrl?.lastPathComponent ?? "")")
-//                .onChange(of: searchedFilesState.selectedIdSet) { _ in
-//                    updateSelectedFiles(isSearched: true)
-//                }
-//                .onChange(of: searchOption.pattern) { _ in
-//                    searchFiles()
-//                }
-//                .onChange(of: searchOption.scope) { _ in
-//                    searchFiles()
-//                }
-//                .onCutCommand(perform: cutSelectedUrls)
-//                .onCopyCommand(perform: copySelectedUrls)
-//        } else {
-            
-                
-//        }
     }
     
     @ViewBuilder private func createFilesView(switchDirAction: SwitchDirAction) -> some View {
         FilesDetailView(dir: $filesState.currentDir, selectionSet: $filesState.selectedIdSet, sortOrder: $filesState.sortOrder, refreshState: $refreshState)
             .onChange(of: isSearching) { isSearching in
-//                if isSearching {
-//                    searchFiles()
-//                } else {
-//                    dismissSearchFiles()
-//                }
+                if isSearching {
+                    searchFiles()
+                } else {
+                    dismissSearchFiles()
+                }
             }
             .onChange(of: searchOption.refreshState) { _ in
                 searchFiles()
@@ -129,7 +104,7 @@ struct FilesContentView: View {
         filesState.objectWillChange.send()
     }
     
-    private func loadRootDir(dirUrl: URL?) async {
+    private func loadRootDir(dirUrl: URL?) {
         filesState.clear()
         searchedFilesState.clear()
         
@@ -144,24 +119,38 @@ struct FilesContentView: View {
         }
         
         let rootDir = DirectoryInfo(url: dirUrl, parent: nil)
-        await loadFilesOfDirectory(dir: rootDir, state: filesState)
         filesState.rootDir = rootDir
         filesState.currentDir = rootDir
+        
+        if isSearching {
+            searchFiles()
+        } else {
+            Task {
+                await loadFilesOfDirectory(dir: rootDir, state: filesState)
+            }
+        }
         
         refresh()
     }
     
-    private func switchDir(dir: DirectoryInfo?) async {
+    private func switchDir(dir: DirectoryInfo?) {
         guard let dir = dir else {
             return
         }
         
-        await loadFilesOfDirectory(dir: dir, state: filesState)
         filesState.currentDir = dir
-        refresh()
+        
+        if isSearching {
+            searchFiles()
+        } else {
+            Task {
+                await loadFilesOfDirectory(dir: dir, state: filesState)
+                refresh()
+            }
+        }
     }
 
-    private func loadFilesOfDirectory(dir: DirectoryInfo, state: FileCollectionState, fileMatcher: FileMatcher? = nil) async {
+    private func loadFilesOfDirectory(dir: DirectoryInfo, state: FileCollectionState, searchMatcher: (any FileInfoMatcher)? = nil) async {
 
         Self.logger.debug("List files of directory \(dir.url.purePath)")
         
@@ -200,7 +189,14 @@ struct FilesContentView: View {
         dir.files.removeAll(where: { file in removedFilePathSet.contains(file.url.purePath) })
         
         let addedFilePaths = [String](addedFilePathSet)
-        await addFiles(filePaths: addedFilePaths, dir: dir, state: state, fileMatcher: fileMatcher)
+        
+        if let fileInfoMatcher = searchMatcher {
+            await addFiles(filePaths: addedFilePaths, dir: dir, state: state, fileMatcher: { file in
+                fileInfoMatcher.match(file: file)
+            })
+        } else {
+            await addFiles(filePaths: addedFilePaths, dir: dir, state: state)
+        }
     }
     
     private func addFiles(filePaths: [String], dir: DirectoryInfo, state: FileCollectionState, fileMatcher: FileMatcher? = nil) async {
@@ -328,20 +324,14 @@ struct FilesContentView: View {
     
     private func searchFiles() {
         if let currentDir = filesState.currentDir {
-            let recursive = searchOption.scope == .currentDirRecursively || searchOption.scope == .rootDirRecursively
-            if recursive {
+            if searchOption.scope.isRecursive {
                 Task {
                     await loadFilesOfDirectory(dir: currentDir, state: filesState)
+                    refresh()
                 }
             } else {
                 Task {
-                    if let fileInfoMatcher = searchOption.matcher {
-                        await loadFilesOfDirectory(dir: currentDir, state: filesState, fileMatcher: { file in
-                            fileInfoMatcher.match(file: file)
-                        })
-                    } else {
-                        await loadFilesOfDirectory(dir: currentDir, state: filesState)
-                    }
+                    await loadFilesOfDirectory(dir: currentDir, state: filesState, searchMatcher: searchOption.matcher)
                     refresh()
                 }
             }
@@ -352,6 +342,7 @@ struct FilesContentView: View {
         if let currentDir = filesState.currentDir {
             Task {
                 await loadFilesOfDirectory(dir: currentDir, state: filesState)
+                refresh()
             }
         }
     }
@@ -359,16 +350,14 @@ struct FilesContentView: View {
 
 struct SwitchDirAction {
     
-    var switchAction: (DirectoryInfo) async -> Void
+    var switchAction: (DirectoryInfo) -> Void
     
-    init(_ switchAction: @escaping (DirectoryInfo) async -> Void) {
+    init(_ switchAction: @escaping (DirectoryInfo) -> Void) {
         self.switchAction = switchAction
     }
     
     func callAsFunction(dir: DirectoryInfo) {
-        Task {
-            await switchAction(dir)
-        }
+        switchAction(dir)
     }
 }
 

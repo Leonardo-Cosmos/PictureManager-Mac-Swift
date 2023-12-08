@@ -48,6 +48,14 @@ enum SearchFileScope: String, CaseIterable, Identifiable {
         return self
     }
     
+    var isCurrentDir: Bool {
+        return self == .currentDir || self == .currentDirRecursively
+    }
+    
+    var isRecursive: Bool {
+        return self == .currentDirRecursively || self == .rootDirRecursively
+    }
+    
     var description: String {
         var text: String
         switch self {
