@@ -19,6 +19,8 @@ class FileCollectionState: ObservableObject {
      */
     var currentDir: DirectoryInfo?
     
+    var virtualDir: DirectoryInfo?
+    
     /**
     The files on root level.
      */

@@ -26,4 +26,17 @@ extension Array: RawRepresentable where Element: Codable {
         }
         return result
     }
+    
+    mutating func stackPush(_ newElement: Element) {
+        self.append(newElement)
+    }
+    
+    mutating func stackPush(contentsOf sequence: any Sequence<Element>) {
+        self.append(contentsOf: sequence)
+    }
+    
+    mutating func stackPop() -> Element {
+        return self.removeLast()
+    }
+    
 }

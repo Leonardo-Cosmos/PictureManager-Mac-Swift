@@ -145,4 +145,52 @@ struct FileUrlProvider {
         }
     }
     
+    func listDirectory(dirPath: String) async -> [String] {
+        let loadFilesResult = await Task(priority: .userInitiated) { () throws -> [String] in
+            return try FileSystemManager.default.filesOfDirectory(dirPath: dirPath)
+        }.result
+        
+        do {
+            return try loadFilesResult.get()
+        } catch let err as NSError {
+            Self.logger.error("Cannot list files of directory \(dirPath). \(err)")
+            return []
+        }
+    }
+    
+    func listDirecotryRecursively(dirPath rootDirPath: String) -> AsyncStream<[String]> {
+        
+        @Sendable
+        func tryFilesOfDirectory(dirUrl: URL) -> [URL]? {
+            do {
+                return try FileSystemManager.default.filesOfDirectory(dirUrl: dirUrl)
+            } catch let err {
+                Self.logger.error("Cannot list files of directory \(dirUrl.purePath). \(err)")
+                return nil
+            }
+        }
+        
+        return AsyncStream<[String]> { continuation in
+            Task(priority: .userInitiated) {
+                
+                var dirStack = [URL]()
+                dirStack.append(URL(dirPathString: rootDirPath))
+                
+                while !dirStack.isEmpty {
+                    let dirUrl = dirStack.stackPop()
+                    
+                    if let urls = tryFilesOfDirectory(dirUrl: dirUrl) {
+                        
+                        continuation.yield(urls.map { $0.purePath })
+                        
+                        let dirUrls = urls.filter { $0.hasDirectoryPath }
+                        dirStack.stackPush(contentsOf: dirUrls.reversed())
+                    }
+                }
+                
+                continuation.finish()
+            }
+        }
+    }
+        
 }
