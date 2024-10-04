@@ -192,6 +192,12 @@ struct DirectoryTreeView: View {
 }
 
 struct NodeView: View {
+    
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: Self.self)
+    )
+    
     var node: DirectoryInfo
     @Binding var selectedNode: DirectoryInfo?
     
@@ -209,7 +215,7 @@ struct NodeView: View {
                     node.children!.append(DirectoryInfo(url: subDirUrl))
                 }
             } catch let error as NSError {
-                print("Cannot list subdirectories. \(error)")
+                Self.logger.error("Cannot list subdirectories. \(error)")
             }
         }
     }

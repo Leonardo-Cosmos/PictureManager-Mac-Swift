@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import System
 
 extension URL {
     
@@ -35,7 +36,7 @@ extension URL {
     
     var purePath: String {
         if #available(macOS 13.0, *) {
-            return self.path(percentEncoded: false)
+            return FilePath(self.path(percentEncoded: false)).string
 //            var path = self.path(percentEncoded: false)
 //            if path.last == "/" {
 //                path.removeLast()

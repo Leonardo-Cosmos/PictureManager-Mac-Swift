@@ -49,6 +49,8 @@ struct FilesContentView: View {
     
     @State private var refreshState = false
     
+    @State var runningSearchTask: Task<(), Never>?
+    
     var body: some View {
         let switchDirAction = SwitchDirAction(switchDir)
         
@@ -78,6 +80,7 @@ struct FilesContentView: View {
                 }, label: {
                     Image(systemName: "chevron.up")
                 })
+                .help("Navigate to parent directory")
                 .disabled(filesState.currentDir == filesState.rootDir)
             }
         }
@@ -90,6 +93,13 @@ struct FilesContentView: View {
                     searchFiles()
                 } else {
                     dismissSearchFiles()
+                    
+                    if let currentDir = filesState.currentDir {
+                        Task {
+                            await loadFilesOfDirectory(dir: currentDir, state: filesState)
+                            refresh()
+                        }
+                    }
                 }
             }
             .onChange(of: searchOption.refreshState) { _ in
@@ -150,40 +160,49 @@ struct FilesContentView: View {
         }
     }
 
-    private func loadFilesOfDirectory(dir: DirectoryInfo, state: FileCollectionState, recursive: Bool = false, searchMatcher: (any FileInfoMatcher)? = nil) async {
+    private func loadFilesOfDirectory(dir: DirectoryInfo, state: FileCollectionState, recursive: Bool = false,
+                                      searchMatcher: (any FileInfoMatcher)? = nil) async {
 
-        Self.logger.debug("List files of directory \(dir.url.purePath)")
+        Self.logger.debug("List files of directory \(dir.url.purePath), recursive: \(recursive)")
         
         if recursive {
+            dir.files.removeAll()
+            state.clear()
             let loadFilePathsStream = FileUrlProvider.default.listDirecotryRecursively(dirPath: dir.url.purePath)
             for await loadedFilePaths in loadFilePathsStream {
-                await Self.addLoadedFiles(loadedFilePaths, dir: dir, state: state)
+                Self.logger.debug("Async loaded file paths count: \(loadedFilePaths.count)")
+                await Self.renderLoadedFiles(loadedFilePaths, dir: dir, state: state, isAsyncLoading: true, searchMatcher: searchMatcher)
             }
         } else {
             let loadedFilePaths = await FileUrlProvider.default.listDirectory(dirPath: dir.url.purePath)
-            await Self.addLoadedFiles(loadedFilePaths, dir: dir, state: state)
+            Self.logger.debug("Sync loaded file paths count: \(loadedFilePaths.count)")
+            await Self.renderLoadedFiles(loadedFilePaths, dir: dir, state: state, searchMatcher: searchMatcher)
         }
     }
     
-    private static func addLoadedFiles(_ loadedFilePaths: [String], dir: DirectoryInfo, state: FileCollectionState, searchMatcher: (any FileInfoMatcher)? = nil) async {
-        let addedFilePaths = Self.filterExistingFiles(loadedFilePaths, dir: dir, state: state)
+    private static func renderLoadedFiles(_ loadedFilePaths: [String], dir: DirectoryInfo, state: FileCollectionState,
+                                          isAsyncLoading: Bool = false, searchMatcher: (any FileInfoMatcher)? = nil) async {
+        let addedFilePaths = Self.filterExistingFiles(loadedFilePaths, &dir.files, state: state, isAsyncLoading: isAsyncLoading)
         
         if let fileInfoMatcher = searchMatcher {
-            await Self.addFilesandLoadAttributes(filePaths: addedFilePaths, dir: dir, state: state, fileMatcher: { file in
+            await Self.addFilesAndLoadAttributes(filePaths: loadedFilePaths, dir: dir, state: state,
+                                                 isAsyncLoading: isAsyncLoading) { file in
                 fileInfoMatcher.match(file: file)
-            })
+            }
         } else {
-            await Self.addFilesandLoadAttributes(filePaths: addedFilePaths, dir: dir, state: state)
+            await Self.addFilesAndLoadAttributes(filePaths: loadedFilePaths, dir: dir, state: state,
+                                                 isAsyncLoading: isAsyncLoading)
         }
     }
     
     /**
      Compares loaded directory contents and existing files in directory to avoid re-add existing files.
      */
-    private static func filterExistingFiles(_ loadedFilePaths: [String], dir: DirectoryInfo, state: FileCollectionState) -> [String] {
+    private static func filterExistingFiles(_ loadedFilePaths: [String], _ dirFiles: inout [FileInfo], state: FileCollectionState,
+                                            isAsyncLoading: Bool = false) -> [String] {
         let loadedFilePathSet = Set(loadedFilePaths)
         
-        let existingFilePaths = dir.files.map { file in
+        let existingFilePaths = dirFiles.map { file in
             if file is DirectoryInfo && file.url.purePath.last == "/" {
                 var path = file.url.purePath
                 path.removeLast()
@@ -193,16 +212,20 @@ struct FilesContentView: View {
             }
         }
         let existingFilePathSet = Set(existingFilePaths)
-        
         let addedFilePathSet = loadedFilePathSet.subtracting(existingFilePathSet)
-        let removedFilePathSet = existingFilePathSet.subtracting(loadedFilePathSet)
         
-        if !removedFilePathSet.isEmpty {
-            let removedFiles = dir.files.filter({ file in removedFilePathSet.contains(file.url.purePath) })
-            for removedFile in removedFiles {
-                state.removeFile(id: removedFile.id)
+        if !isAsyncLoading {
+            let removedFilePathSet = existingFilePathSet.subtracting(loadedFilePathSet)
+            
+            if !removedFilePathSet.isEmpty {
+                let removedFiles = dirFiles.filter({ file in removedFilePathSet.contains(file.url.purePath) })
+                for removedFile in removedFiles {
+                    state.removeFile(id: removedFile.id)
+                }
+                dirFiles.removeAll(where: { file in removedFilePathSet.contains(file.url.purePath) })
+                
+                Self.logger.debug("Removed not loaded files count: \(removedFilePathSet.count)")
             }
-            dir.files.removeAll(where: { file in removedFilePathSet.contains(file.url.purePath) })
         }
         
         return [String](addedFilePathSet)
@@ -211,7 +234,8 @@ struct FilesContentView: View {
     /**
      Load file attributes and filter.
      */
-    private static func addFilesandLoadAttributes(filePaths: [String], dir: DirectoryInfo, state: FileCollectionState, fileMatcher: FileMatcher? = nil) async {
+    private static func addFilesAndLoadAttributes(filePaths: [String], dir: DirectoryInfo, state: FileCollectionState,
+                                                  isAsyncLoading: Bool = false, fileMatcher: FileMatcher? = nil) async {
                         
         var addedFiles: [FileInfo] = []
         var file: FileInfo
@@ -243,26 +267,29 @@ struct FilesContentView: View {
         await ViewHelper.loadUrlResourceValues(files: addedFiles)
         
         if let fileMatcher = fileMatcher {
-            addedFiles = matchSearchCriteria(addedFiles, dir: dir, state: state, fileMatcher: fileMatcher)
+            addedFiles = matchSearchCriteria(addedFiles, &dir.files, state: state, fileMatcher: fileMatcher)
         }
         
         addFilesAndSort(addedFiles, dir: dir, state: state)
     }
     
-    private static func matchSearchCriteria(_ addedFiles: [FileInfo], dir: DirectoryInfo, state: FileCollectionState, fileMatcher: FileMatcher) -> [FileInfo] {
+    private static func matchSearchCriteria(_ addedFiles: [FileInfo], _ dirFiles: inout [FileInfo], state: FileCollectionState,
+                                            isAsyncLoading: Bool = false, fileMatcher: FileMatcher) -> [FileInfo] {
         
         // Remove files not matching search criteria.
-        var removedFiles = dir.files.filter({ file in !fileMatcher(file) })
-        if !removedFiles.isEmpty {
-            var removedFileIdSet = Set<UUID>()
-            
-            for removedFile in removedFiles {
-                state.removeFile(id: removedFile.id)
-                removedFileIdSet.insert(removedFile.id)
+        if !isAsyncLoading {
+            let removedFiles = dirFiles.filter({ file in !fileMatcher(file) })
+            if !removedFiles.isEmpty {
+                var removedFileIdSet = Set<UUID>()
+                
+                for removedFile in removedFiles {
+                    state.removeFile(id: removedFile.id)
+                    removedFileIdSet.insert(removedFile.id)
+                }
+                dirFiles.removeAll(where: { file in removedFileIdSet.contains(file.id) })
+                
+                Self.logger.debug("Removed mismatched files count: \(removedFiles.count)")
             }
-            dir.files.removeAll(where: { file in removedFileIdSet.contains(file.id) })
-            
-//            Self.logger.debug("Removed files: \(removedFiles.count)")
         }
         
         return addedFiles.filter({ file in fileMatcher(file) })
@@ -272,12 +299,12 @@ struct FilesContentView: View {
      Adds files to view and sorts file list after add them.
      */
     private static func addFilesAndSort(_ addedFiles: [FileInfo], dir: DirectoryInfo, state: FileCollectionState) {
+        Self.logger.debug("Added files count: \(addedFiles.count)")
+        
         dir.files.append(contentsOf: addedFiles)
         for addedFile in addedFiles {
             state.addFile(addedFile)
         }
-        
-//        Self.logger.debug("Added files: \(addedFiles.count)")
         
         sortFiles(dir: dir, state: state)
     }
@@ -340,7 +367,7 @@ struct FilesContentView: View {
                                 Self.logger.error("Cannot paste file, \(error.localizedDescription)")
                             }
                             
-                            await Self.addFilesandLoadAttributes(filePaths: [path], dir: currentDir, state: filesState)
+                            await Self.addFilesAndLoadAttributes(filePaths: [path], dir: currentDir, state: filesState)
                         }
                     }
                 }
@@ -349,14 +376,17 @@ struct FilesContentView: View {
     }
     
     private func searchFiles() {
+        dismissSearchFiles()
+        
         if let currentDir = filesState.currentDir {
+            
             if searchOption.scope.isRecursive {
-                Task {
+                runningSearchTask = Task {
                     await loadFilesOfDirectory(dir: currentDir, state: filesState, recursive: true, searchMatcher: searchOption.matcher)
                     refresh()
                 }
             } else {
-                Task {
+                runningSearchTask = Task {
                     await loadFilesOfDirectory(dir: currentDir, state: filesState, searchMatcher: searchOption.matcher)
                     refresh()
                 }
@@ -365,11 +395,9 @@ struct FilesContentView: View {
     }
     
     private func dismissSearchFiles() {
-        if let currentDir = filesState.currentDir {
-            Task {
-                await loadFilesOfDirectory(dir: currentDir, state: filesState)
-                refresh()
-            }
+        if let runningSearchTask = runningSearchTask {
+            Self.logger.debug("Dismiss running search task")
+            runningSearchTask.cancel()
         }
     }
 }
