@@ -158,7 +158,7 @@ struct FileUrlProvider {
         }
     }
     
-    func listDirecotryRecursively(dirPath rootDirPath: String) -> AsyncStream<[String]> {
+    func listDirecotryRecursively(dirPath rootDirPath: String) -> AsyncStream<(dir: String, files: [String])> {
         
         @Sendable
         func tryFilesOfDirectory(dirUrl: URL) -> [URL]? {
@@ -170,7 +170,7 @@ struct FileUrlProvider {
             }
         }
         
-        return AsyncStream<[String]> { continuation in
+        return AsyncStream<(dir: String, files: [String])> { continuation in
             Task(priority: .userInitiated) {
                 
                 var dirStack = [URL]()
@@ -181,7 +181,7 @@ struct FileUrlProvider {
                     
                     if let urls = tryFilesOfDirectory(dirUrl: dirUrl) {
                         
-                        continuation.yield(urls.map { $0.purePath })
+                        continuation.yield((dir: dirUrl.purePath, files: urls.map { $0.purePath }))
                         
                         let dirUrls = urls.filter { $0.hasDirectoryPath }
                         dirStack.stackPush(contentsOf: dirUrls.reversed())

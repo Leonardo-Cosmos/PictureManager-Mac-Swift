@@ -17,6 +17,9 @@ struct FilesDetailView: View {
     
     let invalidValue = "--"
     
+    /**
+     The directory the view currently displays.
+     */
     @Binding var dir: DirectoryInfo?
     
     @Binding var selectionSet: Set<UUID>
@@ -27,7 +30,10 @@ struct FilesDetailView: View {
     
     @Environment(\.SwitchFilesViewDir) private var switchDir: SwitchDirAction
     
-    @State var oldDir: DirectoryInfo? = nil
+    /**
+     The directory where the view leaves from.
+     */
+    @State var lastDir: DirectoryInfo? = nil
     
     var body: some View {
         ScrollViewReader { proxy in
@@ -48,6 +54,11 @@ struct FilesDetailView: View {
                             switchDir(dir: dir)
                         }
                     }
+                }
+                
+                TableColumn("Path", value: \.path) { file in
+                    Text(file.path)
+                        .truncationMode(.head)
                 }
                 
                 TableColumn("Date Modified", value: \.contentModificationDate) { file in
@@ -71,10 +82,10 @@ struct FilesDetailView: View {
                 }
             }
             .onChange(of: dir) { _ in
-                if oldDir != nil && dir != nil {
-                    scrollWhenSwitch(proxy, oldDir: oldDir!, newDir: dir!)
+                if let oldDir = lastDir, let dir = dir {
+                    scrollWhenSwitch(proxy, oldDir: oldDir, newDir: dir)
                 }
-                oldDir = dir
+                lastDir = dir
             }
         }
     }

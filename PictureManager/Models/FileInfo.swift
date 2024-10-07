@@ -49,6 +49,12 @@ class FileInfo: NSObject, Identifiable, ObservableObject {
     
     @Published var fileSize: Int?
     
+    @objc var path: String {
+        get {
+            return url.purePath
+        }
+    }
+    
     init(url: URL, parent: DirectoryInfo?) {
         self.url = url
         self.parent = parent
