@@ -18,7 +18,12 @@ struct FilesDetailView: View {
     let invalidValue = "--"
     
     /**
-     The directory the view currently displays.
+     The files the view currently displayes.
+     */
+    @Binding var files: [FileInfo]
+    
+    /**
+     The directory the view currently located by switching.
      */
     @Binding var dir: DirectoryInfo?
     
@@ -37,7 +42,7 @@ struct FilesDetailView: View {
     
     var body: some View {
         ScrollViewReader { proxy in
-            Table(dir?.files ?? [], selection: $selectionSet, sortOrder: $sortOrder) {
+            Table(files, selection: $selectionSet, sortOrder: $sortOrder) {
                 TableColumn("Name", value: \.name) { file in
                     HStack {
                         FileThumbnailView(thumbnail: file.thumbnail, isDirectory: file is DirectoryInfo)
@@ -119,6 +124,6 @@ struct FilesDetailView: View {
 
 struct FilesDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        FilesDetailView(dir: .constant(DirectoryInfo(path: ".")), selectionSet: .constant(Set<UUID>()), sortOrder: .constant([SortDescriptor<FileInfo>(\.name)]), refreshState: .constant(false))
+        FilesDetailView(files: .constant([]), dir: .constant(DirectoryInfo(path: ".")), selectionSet: .constant(Set<UUID>()), sortOrder: .constant([SortDescriptor<FileInfo>(\.name)]), refreshState: .constant(false))
     }
 }

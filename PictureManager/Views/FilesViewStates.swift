@@ -20,11 +20,8 @@ class FileCollectionState: ObservableObject {
     var currentDir: DirectoryInfo?
     
     /**
-     The data structure used for displaying both real directory and searched result.
-     Result of searching is cosidered as files under a virtual directory with some operations disabled.
+     The dictionary of all loaded directories under this root directory.
      */
-    var displayDir: DirectoryInfo?
-    
     var loadedDirDict = [String: DirectoryInfo]()
     
     /**
@@ -33,12 +30,12 @@ class FileCollectionState: ObservableObject {
 //    @Published var rootFiles = [FileInfo]()
 
     /**
-     All files those can be displayed and selected in a files view.
+     All files those are displayed and can be selected in a files view.
      */
-//    @Published var files = [FileInfo]()
+    @Published var files = [FileInfo]()
 
     /**
-     The dictionary of all IDs and corresponding file.
+     The dictionary of all IDs and corresponding file. It contains all loaed files under this root directory.
      */
     @Published var fileIdDict = [UUID: FileInfo]()
 
@@ -59,16 +56,18 @@ class FileCollectionState: ObservableObject {
     func clear() {
         selectedIdSet.removeAll()
         fileIdDict.removeAll()
-//        files.removeAll()
+        files.removeAll()
+        loadedDirDict.removeAll()
+        currentDir = nil
         rootDir = nil
     }
     
-    func addFile(_ file: FileInfo) {
+    func addFileId(_ file: FileInfo) {
 //        files.add(file)
         fileIdDict[file.id] = file
     }
     
-    func removeFile(id fileId: UUID) {
+    func removeFileId(id fileId: UUID) {
         selectedIdSet.remove(fileId)
         
         if let index = fileIdDict.index(forKey: fileId) {
